@@ -2,7 +2,6 @@ package com.github.jing332.tts_dict_editor
 
 import android.app.Application
 import android.content.Context
-import com.chibatching.kotpref.Kotpref
 import java.util.*
 import kotlin.properties.Delegates
 
@@ -17,7 +16,6 @@ class App : Application() {
         var instance: App by Delegates.notNull()
         val context: Context by lazy { instance }
 
-
     }
 
 
@@ -25,6 +23,5 @@ class App : Application() {
         super.onCreate()
         instance = this
 
-        Kotpref.init(this)
     }
 }

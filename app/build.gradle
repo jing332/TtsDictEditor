@@ -2,14 +2,16 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'kotlinx-serialization'
+    id 'kotlin-parcelize'
+    id 'com.google.devtools.ksp'
 }
 
 android {
-    namespace 'com.example.tts.word'
+    namespace 'com.github.jing332.tts_dict_editor'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.github.jing332.TtsDictEditor"
+        applicationId "com.github.jing332.tts_dict_editor"
         minSdk 26
         targetSdk 33
         versionCode 1
@@ -23,6 +25,12 @@ android {
         composeOptions {
             kotlinCompilerExtensionVersion compose_version
             kotlinCompilerVersion kotlin_version
+        }
+
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas".toString())
+            arg("room.incremental", "true")
+            arg("room.expandProjection", "true")
         }
     }
 
@@ -95,24 +103,30 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
 
     implementation 'io.github.molihuan:pathselector:1.1.14'
+    // PopupMenu
+    implementation "me.saket.cascade:cascade-compose:2.1.0"
 
-
-    // SharedPreference
-    implementation 'com.chibatching.kotpref:kotpref:2.13.2'
-
+    // Compose
     implementation platform('androidx.compose:compose-bom:2023.05.01')
     implementation 'androidx.compose.runtime:runtime-livedata:1.5.0-beta01'
 
-    implementation "com.google.accompanist:accompanist-systemuicontroller:0.31.2-alpha"
+    implementation 'com.google.accompanist:accompanist-systemuicontroller:0.31.3-beta'
+    implementation "com.github.FunnySaltyFish.ComposeDataSaver:data-saver:v1.1.5"
+
+    // Room
+    implementation "androidx.room:room-runtime:$room_version"
+    implementation "androidx.room:room-ktx:$room_version"
+    ksp "androidx.room:room-compiler:$room_version"
+    androidTestImplementation "androidx.room:room-testing:$room_version"
 
     implementation "androidx.compose.ui:ui:${compose_version}"
     implementation "androidx.compose.ui:ui-graphics:${compose_version}"
     implementation "androidx.compose.ui:ui-tooling-preview:${compose_version}"
-    implementation "androidx.constraintlayout:constraintlayout-compose:1.0.1"
 
-    debugImplementation "androidx.compose.ui:ui-tooling:${compose_version}"
+    debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
     debugImplementation "androidx.compose.ui:ui-test-manifest:${compose_version}"
     implementation 'androidx.compose.material3:material3:1.1.0'
+    implementation "androidx.constraintlayout:constraintlayout-compose:1.0.1"
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

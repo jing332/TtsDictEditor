@@ -16,6 +16,11 @@ plugins {
     id 'com.google.devtools.ksp' version "$ksp_version" apply false
 }
 
+ext {
+    uiToolingVersion = compose_version
+    uiToolingVersion1 = compose_version
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

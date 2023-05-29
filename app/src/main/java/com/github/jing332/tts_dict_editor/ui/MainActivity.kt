@@ -5,12 +5,19 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,22 +29,30 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.core.view.WindowCompat
-import com.example.tts.word.R
+import com.github.jing332.tts_dict_editor.R
+import com.github.jing332.tts_dict_editor.data.appDb
+import com.github.jing332.tts_dict_editor.data.entites.DictFile
 import com.github.jing332.tts_dict_editor.ui.Widgets.TransparentSystemBars
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 
 class MainActivity : ComponentActivity() {
     private val vm: MainActivityViewModel by viewModels()
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-//        toast(data.u)
+    private val mDictFileActivityLauncher = registerForActivityResult(
+        AppActivityResultContracts.parcelableDataActivity<DictFile>(DictFileEditActivity::class.java)
+    ) {
+        it?.let { dictFile ->
+            appDb.dictFileDao.insert(dictFile)
+        }
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -59,15 +74,25 @@ class MainActivity : ComponentActivity() {
                             ),
                             actions = {
                                 IconButton(onClick = {
+                                    mDictFileActivityLauncher.launch(DictFile())
                                 }) {
-                                    Icon(Icons.Filled.Add, "add")
+                                    Icon(Icons.Filled.Add, stringResource(id = R.string.add))
+                                }
+
+                                IconButton(onClick = {
+
+                                }) {
+                                    Icon(
+                                        Icons.Filled.MoreVert,
+                                        stringResource(id = R.string.more_options)
+                                    )
                                 }
                             }
                         )
                     },
                     content = { pad ->
                         Surface(modifier = Modifier.padding(pad)) {
-                            widget(vm)
+                            dictFilesScreen()
                         }
                     }
 
@@ -75,11 +100,62 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+
+    @Composable
+    fun dictFilesScreen() {
+        val models = vm.dictFilesFlow.collectAsState(initial = listOf())
+        LazyColumn {
+            items(models.value.toTypedArray(), key = { it.id }) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    ConstraintLayout(Modifier.fillMaxWidth()) {
+                        val (txtName, txtInfo, btnEdit) = createRefs()
+                        Text(text = it.name,
+                            textAlign = TextAlign.Start,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.constrainAs(txtName) {
+                                start.linkTo(parent.start)
+                                end.linkTo(btnEdit.start)
+                                top.linkTo(parent.top)
+                                bottom.linkTo(txtInfo.top)
+                            }
+                        )
+                        Text(
+                            text = "it.filePath",
+                            textAlign = TextAlign.Left,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.constrainAs(txtInfo) {
+                                start.linkTo(parent.start)
+                                top.linkTo(txtName.bottom)
+
+                                bottom.linkTo(parent.bottom)
+                            })
+
+
+                        IconButton(
+                            modifier = Modifier.constrainAs(btnEdit) {
+                                end.linkTo(parent.end)
+                                top.linkTo(parent.top)
+                                bottom.linkTo(parent.bottom)
+                            },
+                            onClick = { /*TODO*/ }
+                        ) {
+                            Icon(Icons.Filled.Edit, stringResource(R.string.desc_edit, it.name))
+                        }
+
+                    }
+                }
+            }
+        }
+    }
 }
 
 
-
-
+/*
 @Composable
 fun widget(vm: MainActivityViewModel, modifier: Modifier = Modifier) {
     val models = vm.getModels().observeAsState()
@@ -116,17 +192,4 @@ fun itemInGroup(list: List<DictFileItemModel>, modifier: Modifier) {
             )
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun LabeledTextField(labelText: String, value: String, onValueChange: (String) -> Unit) {
-    Column(Modifier.padding(16.dp)) {
-        Text(labelText)
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
+}*/

@@ -45,7 +45,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
-import com.example.tts.word.R
+import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.ui.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_server_android.util.toast
