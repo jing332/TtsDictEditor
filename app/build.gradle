@@ -1,0 +1,126 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlinx-serialization'
+}
+
+android {
+    namespace 'com.example.tts.word'
+    compileSdk 33
+
+    defaultConfig {
+        applicationId "com.github.jing332.TtsDictEditor"
+        minSdk 26
+        targetSdk 33
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary true
+        }
+
+        composeOptions {
+            kotlinCompilerExtensionVersion compose_version
+            kotlinCompilerVersion kotlin_version
+        }
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("./editor.jks")
+            storePassword 'editor'
+            keyAlias 'editor'
+            keyPassword 'editor'
+        }
+    }
+
+    buildTypes {
+        release {
+            versionNameSuffix "_${releaseTime()}"
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+//            zipAlignEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            signingConfig signingConfigs.release
+            applicationIdSuffix ".debug"
+            versionNameSuffix "_debug"
+        }
+    }
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/INDEX.LIST', 'META-INF/*.md']
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+    kotlin {
+        jvmToolchain(17)
+    }
+
+    buildFeatures {
+        compose true
+    }
+
+    packagingOptions {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+    }
+}
+
+dependencies {
+    // IO & NET
+    implementation 'com.squareup.okio:okio:3.3.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation 'com.github.liangjingkanji:Net:3.5.7'
+
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1'
+
+    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.activity:activity-compose:1.7.2'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.6.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
+
+    implementation 'io.github.molihuan:pathselector:1.1.14'
+
+
+    // SharedPreference
+    implementation 'com.chibatching.kotpref:kotpref:2.13.2'
+
+    implementation platform('androidx.compose:compose-bom:2023.05.01')
+    implementation 'androidx.compose.runtime:runtime-livedata:1.5.0-beta01'
+
+    implementation "com.google.accompanist:accompanist-systemuicontroller:0.31.2-alpha"
+
+    implementation "androidx.compose.ui:ui:${compose_version}"
+    implementation "androidx.compose.ui:ui-graphics:${compose_version}"
+    implementation "androidx.compose.ui:ui-tooling-preview:${compose_version}"
+    implementation "androidx.constraintlayout:constraintlayout-compose:1.0.1"
+
+    debugImplementation "androidx.compose.ui:ui-tooling:${compose_version}"
+    debugImplementation "androidx.compose.ui:ui-test-manifest:${compose_version}"
+    implementation 'androidx.compose.material3:material3:1.1.0'
+
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation platform('androidx.compose:compose-bom:2023.05.01')
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4:${compose_version}"
+}
+
+static def releaseTime() {
+    return new Date().format("yyyyMMddHHmm", TimeZone.getTimeZone("GMT+08:00"))
+}

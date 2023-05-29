@@ -1,0 +1,21 @@
+buildscript {
+    ext {
+        kotlin_version = '1.8.10'
+        agp_version = '8.0.0'
+        room_version = '2.5.1'
+        ksp_version = '1.8.10-1.0.9'
+        compose_version = '1.4.3'
+    }
+}
+
+plugins {
+    id 'com.android.application' version "$agp_version" apply false
+    id 'com.android.library' version "$agp_version" apply false
+    id 'org.jetbrains.kotlin.android' version "$kotlin_version" apply false
+    id 'org.jetbrains.kotlin.plugin.serialization' version "$kotlin_version"
+    id 'com.google.devtools.ksp' version "$ksp_version" apply false
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
