@@ -23,8 +23,7 @@ android {
         }
 
         composeOptions {
-            kotlinCompilerExtensionVersion compose_version
-            kotlinCompilerVersion kotlin_version
+            kotlinCompilerExtensionVersion compose_compiler_version
         }
 
         ksp {
@@ -102,7 +101,6 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
 
-    implementation 'io.github.molihuan:pathselector:1.1.14'
     // PopupMenu
     implementation "me.saket.cascade:cascade-compose:2.1.0"
 
@@ -120,13 +118,16 @@ dependencies {
     androidTestImplementation "androidx.room:room-testing:$room_version"
 
     implementation "androidx.compose.ui:ui:${compose_version}"
+    implementation "androidx.compose.material:material-icons-extended:$compose_version"
+    implementation "androidx.compose.animation:animation:${compose_version}"
     implementation "androidx.compose.ui:ui-graphics:${compose_version}"
     implementation "androidx.compose.ui:ui-tooling-preview:${compose_version}"
 
-    debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
-    debugImplementation "androidx.compose.ui:ui-test-manifest:${compose_version}"
     implementation 'androidx.compose.material3:material3:1.1.0'
     implementation "androidx.constraintlayout:constraintlayout-compose:1.0.1"
+
+    debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
+    debugImplementation "androidx.compose.ui:ui-test-manifest:${compose_version}"
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

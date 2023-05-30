@@ -85,7 +85,6 @@ class DictFileEditActivity : ComponentActivity() {
                 )
             }
         }
-
     }
 
     @Composable

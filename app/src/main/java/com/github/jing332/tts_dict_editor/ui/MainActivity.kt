@@ -1,23 +1,21 @@
 package com.github.jing332.tts_dict_editor.ui
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Card
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,13 +23,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -43,6 +42,8 @@ import com.github.jing332.tts_dict_editor.data.appDb
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
 import com.github.jing332.tts_dict_editor.ui.Widgets.TransparentSystemBars
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
+import me.saket.cascade.CascadeDropdownMenu
+import me.saket.cascade.rememberCascadeState
 
 class MainActivity : ComponentActivity() {
     private val vm: MainActivityViewModel by viewModels()
@@ -107,13 +108,13 @@ class MainActivity : ComponentActivity() {
         val models = vm.dictFilesFlow.collectAsState(initial = listOf())
         LazyColumn {
             items(models.value.toTypedArray(), key = { it.id }) {
-                Card(
+                ElevatedCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     ConstraintLayout(Modifier.fillMaxWidth()) {
-                        val (txtName, txtInfo, btnEdit) = createRefs()
+                        val (txtName, txtInfo, btnEdit, btnMore) = createRefs()
                         Text(text = it.name,
                             textAlign = TextAlign.Start,
                             style = MaterialTheme.typography.titleMedium,
@@ -131,20 +132,65 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.constrainAs(txtInfo) {
                                 start.linkTo(parent.start)
                                 top.linkTo(txtName.bottom)
-
                                 bottom.linkTo(parent.bottom)
                             })
 
 
                         IconButton(
                             modifier = Modifier.constrainAs(btnEdit) {
-                                end.linkTo(parent.end)
+                                end.linkTo(btnMore.start)
                                 top.linkTo(parent.top)
                                 bottom.linkTo(parent.bottom)
                             },
-                            onClick = { /*TODO*/ }
+                            onClick = {
+                                mDictFileActivityLauncher.launch(it)
+                            }
                         ) {
                             Icon(Icons.Filled.Edit, stringResource(R.string.desc_edit, it.name))
+                        }
+
+                        var isMoreOptionsVisible by rememberSaveable { mutableStateOf(false) }
+                        val menuState = rememberCascadeState()
+                        CascadeDropdownMenu(
+                            state = menuState,
+                            expanded = isMoreOptionsVisible,
+                            onDismissRequest = { isMoreOptionsVisible = false }) {
+
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.delete)) },
+                                children = {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.confirm_deletion)) },
+                                        children = {})
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.cancel)) },
+                                        children = {},
+                                        trailingIcon = {
+                                            Icon(
+                                                Icons.Filled.Delete,
+                                                stringResource(R.string.delete),
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        },
+                                        modifier = Modifier.clickable {
+                                            menuState.resetBackStack()
+                                        })
+                                })
+                        }
+//                        AnimatedContent(targetState = ) {
+//
+//                        }
+                        IconButton(
+                            onClick = {
+                                isMoreOptionsVisible = true
+                            },
+                            modifier = Modifier.constrainAs(btnMore) {
+                                end.linkTo(parent.end)
+                                top.linkTo(parent.top)
+                                bottom.linkTo(parent.bottom)
+                            }
+                        ) {
+                            Icon(Icons.Filled.MoreVert, stringResource(R.string.more_options))
                         }
 
                     }
