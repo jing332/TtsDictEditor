@@ -13,7 +13,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,22 +37,37 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.navigation.navOptions
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.ui.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_server_android.util.toast
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
+import java.net.URLDecoder
+import java.net.URLEncoder
 
 class FilePickerActivity : ComponentActivity() {
     private val vm: FilePickerViewModel by viewModels()
@@ -108,13 +125,14 @@ class FilePickerActivity : ComponentActivity() {
         setContent {
             AppTheme {
                 Widgets.TransparentSystemBars()
+                var title by remember { mutableStateOf("") }
                 Scaffold(
                     topBar = {
                         TopAppBar(
                             modifier = Modifier.fillMaxWidth(),
                             title = {
                                 Text(
-                                    text = vm.currentPath.value,
+                                    text = title,
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             },
@@ -133,123 +151,80 @@ class FilePickerActivity : ComponentActivity() {
                     content = { pad ->
                         Surface(modifier = Modifier.padding(pad)) {
                             filePermissionDialog()
-                            pickerScreen(vm)
+                            pickerScreen { title = it }
                         }
                     }
 
                 )
             }
         }
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            vm.updateModels(Environment.getExternalStorageDirectory().absolutePath)
-        }
     }
 
     @Composable
-    fun pickerScreen(vm: FilePickerViewModel) {
-        val models = remember { vm.models }
+    fun pickerScreen(onCurrentPathChanged: (String) -> Unit = {}) {
         Column {
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(
-                    count = models.size, key = {
-                        models[it].id
-                    }, itemContent = { pos ->
-                        val model = models[pos]
-
-                        itemWidget(title = model.name,
-                            subTitle = "${model.fileCount}个文件，${model.folderCount}个文件夹",
-                            isCheckable = model.isCheckable,
-                            isChecked = model.isChecked,
-                            isDirectory = model.isDirectory,
-                            onClickItem = {
-                                if (model.isDirectory) vm.enterDir(model)
-                                else {
-                                    vm.updateModelsSelected(model, true)
-                                }
-                            },
-                            onCheckedChanged = { vm.updateModelsSelected(model, it) }
-                        )
-                    }
-                )
+            var confirmBtnEnabled by remember {
+                mutableStateOf(false)
             }
+            val navController = rememberNavController()
+            NavHost(
+                modifier = Modifier.weight(1f),
+                navController = navController,
+                startDestination = "picker/{path}"
+            ) {
+                composable(
+                    "picker/{path}",
+                    arguments = listOf(navArgument("path") {
+                        defaultValue = ""
+                        type = NavType.StringType
+                    })
+                ) {
+                    val path = (it.arguments?.getString("path")?.run {
+                        URLDecoder.decode(this, "UTF-8")
+                    } ?: "").ifEmpty { Environment.getExternalStorageDirectory().absolutePath }
+                    onCurrentPathChanged.invoke(path)
+
+                    var selectedList by remember {
+                        mutableStateOf(listOf<File>())
+                    }
+
+                    CatalogScreen(
+                        path = path,
+                        selectedList = selectedList,
+                        onSelectListChange = { list ->
+                            selectedList = list
+                            confirmBtnEnabled = list.isNotEmpty()
+                        },
+                        onEnterDir = { model ->
+                            val file = model.file
+                            if (file.absolutePath == CatalogScreenViewModel.UPPER_PATH_NAME) {
+                                navController.popBackStack()
+                            } else {
+                                navController.navigate(
+                                    "picker/${URLEncoder.encode(file.absolutePath, "UTF-8")}",
+                                    navOptions {
+                                        launchSingleTop = false
+                                        restoreState = true
+                                    })
+                            }
+                        })
+                }
+            }
+
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp),
-                onClick = { toast("qwq") },
-                enabled = vm.hasSelectedModels.value
-            ) {
+                onClick =
+                { toast("qwq") },
+                enabled = confirmBtnEnabled
+            )
+            {
                 Text(text = "OK")
             }
         }
     }
 
-    @Composable
-    fun itemWidget(
-        title: String,
-        subTitle: String,
-        isCheckable: Boolean,
-        isChecked: Boolean,
-        isDirectory: Boolean,
-        onClickItem: () -> Unit,
-        onCheckedChanged: (Boolean) -> Unit
-    ) {
-        ConstraintLayout(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-                .clip(RoundedCornerShape(8))
-                .clickable {
-                    onClickItem.invoke()
-                }
-        ) {
-            val (textTitle, textSubtitle, imgType, radioSelected) = createRefs()
-            Image(
-                painter = painterResource(id = if (isDirectory) R.drawable.baseline_folder_24 else R.drawable.baseline_insert_drive_file_24),
-                contentDescription = "类型",
-                modifier = Modifier
-                    .constrainAs(imgType) {
-                        start.linkTo(parent.start)
-                        top.linkTo(parent.top)
-                        bottom.linkTo(parent.bottom)
-                    }
-                    .size(24.dp)
-            )
-            Text(
-                text = title,
-                modifier = Modifier.constrainAs(textTitle) {
-                    start.linkTo(imgType.end, margin = 8.dp)
-                    top.linkTo(parent.top)
-                    bottom.linkTo(textSubtitle.top)
-                },
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Text(
-                text = subTitle,
-                modifier = Modifier.constrainAs(textSubtitle) {
-                    start.linkTo(imgType.end, margin = 8.dp)
-                    top.linkTo(textTitle.bottom)
-                    bottom.linkTo(parent.bottom)
-                },
-                style = MaterialTheme.typography.bodySmall
-            )
-
-            if (isCheckable)
-                Checkbox(
-                    checked = isChecked,
-                    onCheckedChange = {
-                        onCheckedChanged(it)
-                    },
-                    modifier = Modifier.constrainAs(radioSelected) {
-                        end.linkTo(parent.end)
-                        top.linkTo(parent.top)
-                        bottom.linkTo(parent.bottom)
-                    }
-                )
-        }
-    }
 
 }
 

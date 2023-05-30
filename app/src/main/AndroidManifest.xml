@@ -32,6 +32,10 @@
 
         <activity android:name=".ui.DictFileEditActivity" />
 
+        <activity
+            android:name=".ui.filepicker.FilePickerActivity"
+            android:exported="true" />
+
     </application>
 
 </manifest>

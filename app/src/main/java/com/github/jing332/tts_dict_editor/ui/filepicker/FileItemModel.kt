@@ -2,7 +2,7 @@ package com.github.jing332.tts_dict_editor.ui.filepicker
 
 import java.io.File
 
-data class ItemModel(
+data class FileItemModel(
     val file: File,
 
     val name: String,
@@ -15,4 +15,8 @@ data class ItemModel(
 
     val id: String = file.absolutePath,
     val isDirectory: Boolean = file.isDirectory,
-)
+) {
+    fun isEmpty(): Boolean {
+        return fileCount == 0 && folderCount == 0
+    }
+}
