@@ -7,8 +7,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,10 +59,23 @@ class DictFileEditActivity : ComponentActivity() {
                                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                                 titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                             ),
+                            navigationIcon = {
+                                IconButton(onClick = {
+                                    finishAfterTransition()
+                                }) {
+                                    Icon(
+                                        Icons.Filled.ArrowBack,
+                                        getString(R.string.back)
+                                    )
+                                }
+                            },
                             actions = {
                                 IconButton(onClick = {
                                     setResult(RESULT_OK, Intent().apply {
-                                        putExtra(IntentKeys.KEY_DATA, vm.getDictFile())
+                                        putExtra(
+                                            IntentKeys.KEY_DATA,
+                                            vm.getDictFile(getString(R.string.unnamed))
+                                        )
                                     })
                                     finishAfterTransition()
                                 }) {
@@ -102,6 +119,7 @@ class DictFileEditActivity : ComponentActivity() {
                 modifier = Modifier.fillMaxWidth()
             )
 
+            Spacer(modifier = Modifier.padding(8.dp))
 
             val path by vm.filePathState
             OutlinedTextField(
@@ -109,13 +127,16 @@ class DictFileEditActivity : ComponentActivity() {
                     vm.updateFilePath(it)
                 },
                 trailingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_file_open_24),
-                        contentDescription = "选择文件",
-                        modifier = Modifier.clickable {
+                    IconButton(
+                        onClick = {
 
-                        }
-                    )
+                        },
+                    ) {
+                        Icon(
+                            Icons.Filled.FileOpen,
+                            contentDescription = stringResource(R.string.select_file)
+                        )
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             )

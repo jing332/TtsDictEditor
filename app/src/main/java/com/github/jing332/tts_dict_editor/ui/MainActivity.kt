@@ -4,8 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -81,7 +79,6 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 IconButton(onClick = {
-
                                 }) {
                                     Icon(
                                         Icons.Filled.MoreVert,
@@ -108,96 +105,113 @@ class MainActivity : ComponentActivity() {
         val models = vm.dictFilesFlow.collectAsState(initial = listOf())
         LazyColumn {
             items(models.value.toTypedArray(), key = { it.id }) {
-                ElevatedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                ) {
-                    ConstraintLayout(Modifier.fillMaxWidth()) {
-                        val (txtName, txtInfo, btnEdit, btnMore) = createRefs()
-                        Text(text = it.name,
-                            textAlign = TextAlign.Start,
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.constrainAs(txtName) {
-                                start.linkTo(parent.start)
-                                end.linkTo(btnEdit.start)
-                                top.linkTo(parent.top)
-                                bottom.linkTo(txtInfo.top)
-                            }
-                        )
-                        Text(
-                            text = "it.filePath",
-                            textAlign = TextAlign.Left,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.constrainAs(txtInfo) {
-                                start.linkTo(parent.start)
-                                top.linkTo(txtName.bottom)
-                                bottom.linkTo(parent.bottom)
-                            })
-
-
-                        IconButton(
-                            modifier = Modifier.constrainAs(btnEdit) {
-                                end.linkTo(btnMore.start)
-                                top.linkTo(parent.top)
-                                bottom.linkTo(parent.bottom)
-                            },
-                            onClick = {
-                                mDictFileActivityLauncher.launch(it)
-                            }
-                        ) {
-                            Icon(Icons.Filled.Edit, stringResource(R.string.desc_edit, it.name))
-                        }
-
-                        var isMoreOptionsVisible by rememberSaveable { mutableStateOf(false) }
-                        val menuState = rememberCascadeState()
-                        CascadeDropdownMenu(
-                            state = menuState,
-                            expanded = isMoreOptionsVisible,
-                            onDismissRequest = { isMoreOptionsVisible = false }) {
-
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.delete)) },
-                                children = {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.confirm_deletion)) },
-                                        children = {})
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.cancel)) },
-                                        children = {},
-                                        trailingIcon = {
-                                            Icon(
-                                                Icons.Filled.Delete,
-                                                stringResource(R.string.delete),
-                                                tint = MaterialTheme.colorScheme.error
-                                            )
-                                        },
-                                        modifier = Modifier.clickable {
-                                            menuState.resetBackStack()
-                                        })
-                                })
-                        }
-//                        AnimatedContent(targetState = ) {
-//
-//                        }
-                        IconButton(
-                            onClick = {
-                                isMoreOptionsVisible = true
-                            },
-                            modifier = Modifier.constrainAs(btnMore) {
-                                end.linkTo(parent.end)
-                                top.linkTo(parent.top)
-                                bottom.linkTo(parent.bottom)
-                            }
-                        ) {
-                            Icon(Icons.Filled.MoreVert, stringResource(R.string.more_options))
-                        }
-
-                    }
-                }
+                dictFileItem(it,
+                    onEdit = {
+                        mDictFileActivityLauncher.launch(it)
+                    },
+                    onDelete = {
+                        appDb.dictFileDao.delete(it)
+                    })
             }
         }
     }
+
+    @Composable
+    fun dictFileItem(
+        dictFile: DictFile,
+        onEdit: () -> Unit,
+        onDelete: () -> Unit,
+    ) {
+        ElevatedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            ConstraintLayout(Modifier.fillMaxWidth()) {
+                val (txtName, txtInfo, btnEdit, btnMore) = createRefs()
+                Text(text = dictFile.name,
+                    textAlign = TextAlign.Start,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.constrainAs(txtName) {
+                        start.linkTo(parent.start)
+                        end.linkTo(btnEdit.start)
+                        top.linkTo(parent.top)
+                        bottom.linkTo(txtInfo.top)
+                    }
+                )
+                Text(
+                    text = dictFile.filePath,
+                    textAlign = TextAlign.Left,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.constrainAs(txtInfo) {
+                        start.linkTo(parent.start)
+                        top.linkTo(txtName.bottom)
+                        bottom.linkTo(parent.bottom)
+                    })
+
+
+                IconButton(
+                    modifier = Modifier.constrainAs(btnEdit) {
+                        end.linkTo(btnMore.start)
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                    },
+                    onClick = {
+                        onEdit.invoke()
+                    }
+                ) {
+                    Icon(Icons.Filled.Edit, stringResource(R.string.desc_edit, dictFile.name))
+                }
+
+                var isMoreOptionsVisible by rememberSaveable { mutableStateOf(false) }
+
+                IconButton(
+                    onClick = {
+                        isMoreOptionsVisible = true
+                    },
+                    modifier = Modifier.constrainAs(btnMore) {
+                        end.linkTo(parent.end)
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                    }
+                ) {
+                    Icon(Icons.Filled.MoreVert, stringResource(R.string.more_options))
+
+                    val menuState = rememberCascadeState()
+                    CascadeDropdownMenu(
+                        state = menuState,
+                        expanded = isMoreOptionsVisible,
+                        onDismissRequest = { isMoreOptionsVisible = false }) {
+
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.delete)) },
+                            trailingIcon = {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    stringResource(R.string.delete),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            },
+                            children = {
+                                androidx.compose.material3.DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.confirm_deletion)) },
+                                    onClick = {
+                                        onDelete.invoke()
+                                        isMoreOptionsVisible = false
+                                    }
+                                )
+                                androidx.compose.material3.DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.cancel)) },
+                                    onClick = { menuState.navigateBack() }
+                                )
+                            })
+                    }
+                }
+
+            }
+        }
+    }
+
 }
 
 

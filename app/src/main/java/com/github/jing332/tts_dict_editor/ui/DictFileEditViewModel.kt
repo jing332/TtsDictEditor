@@ -20,7 +20,7 @@ class DictFileEditViewModel : ViewModel() {
         _nameState.value = text
     }
 
-    fun updateFilePath(path:String){
+    fun updateFilePath(path: String) {
         _filePathState.value = path
     }
 
@@ -30,7 +30,10 @@ class DictFileEditViewModel : ViewModel() {
         _filePathState.value = dictFile.filePath
     }
 
-    fun getDictFile(): DictFile {
-        return mDictFile.copy(name = nameState.value, filePath = filePathState.value)
+    fun getDictFile(defaultName: String): DictFile {
+        return mDictFile.copy(
+            name = nameState.value.ifBlank { defaultName },
+            filePath = filePathState.value
+        )
     }
 }
