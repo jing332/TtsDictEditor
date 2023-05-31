@@ -27,8 +27,7 @@
         <activity
             android:name=".ui.replace.RuleManagerActivity"
             android:exported="false"
-            android:label="@string/title_activity_rule_manager"
-            android:theme="@style/Theme.App" />
+            android:label="@string/title_activity_rule_manager" />
         <activity
             android:name=".ui.MainActivity"
             android:exported="true">
@@ -42,6 +41,7 @@
         <activity
             android:name=".ui.filepicker.FilePickerActivity"
             android:exported="true" />
+
         <activity
             android:name=".ui.replace.edit.RuleEditActivity"
             android:exported="true" />

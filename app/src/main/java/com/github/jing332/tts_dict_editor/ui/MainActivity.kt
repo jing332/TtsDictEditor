@@ -1,5 +1,6 @@
 package com.github.jing332.tts_dict_editor.ui
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -50,6 +51,7 @@ import com.github.jing332.tts_dict_editor.data.appDb
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
 import com.github.jing332.tts_dict_editor.ui.Widgets.TransparentSystemBars
 import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditActivity
+import com.github.jing332.tts_dict_editor.ui.replace.RuleManagerActivity
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
 import me.saket.cascade.CascadeDropdownMenu
@@ -115,7 +117,7 @@ class MainActivity : ComponentActivity() {
                 dictFileItem(it.copy(
                     filePath = this@MainActivity.getPath(Uri.parse(it.filePath), false) ?: ""
                 ), onReplaceRuleEdit = {
-
+                    startActivity(Intent(this@MainActivity, RuleManagerActivity::class.java))
                 }, onEdit = {
                     mDictFileActivityLauncher.launch(it)
                 }, onDelete = {
@@ -134,7 +136,7 @@ class MainActivity : ComponentActivity() {
         onDelete: () -> Unit,
     ) {
         Card(
-            onClick = {},
+            onClick = onReplaceRuleEdit,
             colors = CardDefaults.elevatedCardColors(),
             elevation = CardDefaults.elevatedCardElevation(),
             modifier = Modifier
