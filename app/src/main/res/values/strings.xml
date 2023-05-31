@@ -11,4 +11,8 @@
     <string name="unnamed">未命名</string>
     <string name="select_file">选择文件</string>
     <string name="back">返回</string>
+    <string name="name">名称</string>
+    <string name="pattern">匹配 (替换规则)</string>
+    <string name="replacement">替换为</string>
+    <string name="use_regex">使用正则表达式</string>
 </resources>

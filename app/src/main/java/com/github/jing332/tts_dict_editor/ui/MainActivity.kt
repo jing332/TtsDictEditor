@@ -1,9 +1,12 @@
 package com.github.jing332.tts_dict_editor.ui
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,14 +35,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
 import androidx.core.view.WindowCompat
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.data.appDb
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
 import com.github.jing332.tts_dict_editor.ui.Widgets.TransparentSystemBars
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
+import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
 
@@ -105,7 +111,13 @@ class MainActivity : ComponentActivity() {
         val models = vm.dictFilesFlow.collectAsState(initial = listOf())
         LazyColumn {
             items(models.value.toTypedArray(), key = { it.id }) {
-                dictFileItem(it,
+                dictFileItem(
+                    it.copy(
+                        filePath = this@MainActivity.getPath(Uri.parse(it.filePath), false) ?: ""
+                    ),
+                    onReplaceRuleEdit = {
+
+                    },
                     onEdit = {
                         mDictFileActivityLauncher.launch(it)
                     },
@@ -119,18 +131,27 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun dictFileItem(
         dictFile: DictFile,
+        onReplaceRuleEdit: () -> Unit,
         onEdit: () -> Unit,
         onDelete: () -> Unit,
     ) {
         ElevatedCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 4.dp, vertical = 8.dp)
+                .clickable {
+                    onReplaceRuleEdit.invoke()
+                },
         ) {
-            ConstraintLayout(Modifier.fillMaxWidth()) {
+            ConstraintLayout(
+                Modifier
+                    .fillMaxSize()
+                    .padding(4.dp)
+            ) {
                 val (txtName, txtInfo, btnEdit, btnMore) = createRefs()
                 Text(text = dictFile.name,
                     textAlign = TextAlign.Start,
+                    maxLines = 1,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.constrainAs(txtName) {
                         start.linkTo(parent.start)
@@ -141,12 +162,16 @@ class MainActivity : ComponentActivity() {
                 )
                 Text(
                     text = dictFile.filePath,
-                    textAlign = TextAlign.Left,
+                    textAlign = TextAlign.Start,
+                    maxLines = 5,
+                    overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.constrainAs(txtInfo) {
                         start.linkTo(parent.start)
                         top.linkTo(txtName.bottom)
                         bottom.linkTo(parent.bottom)
+                        end.linkTo(btnEdit.start, margin = 8.dp)
+                        width = Dimension.fillToConstraints
                     })
 
 

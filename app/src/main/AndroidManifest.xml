@@ -40,6 +40,10 @@
             android:name=".ui.filepicker.FilePickerActivity"
             android:exported="true" />
 
+        <activity
+            android:name=".ui.replace.edit.RuleEditActivity"
+            android:exported="true" />
+
     </application>
 
 </manifest>

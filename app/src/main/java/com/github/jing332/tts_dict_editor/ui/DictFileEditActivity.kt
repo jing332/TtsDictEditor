@@ -2,8 +2,10 @@ package com.github.jing332.tts_dict_editor.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Environment
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -104,6 +106,17 @@ class DictFileEditActivity : ComponentActivity() {
         }
     }
 
+    private val filepicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) {
+        it?.let { uri ->
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+
+            vm.updateFilePath(uri.toString())
+        }
+    }
+
     @Composable
     fun screen() {
         Column(
@@ -129,7 +142,12 @@ class DictFileEditActivity : ComponentActivity() {
                 trailingIcon = {
                     IconButton(
                         onClick = {
-
+                            filepicker.launch(
+                                arrayOf(
+                                    "${Environment.getExternalStorageDirectory()}Android/data",
+                                    "text/*"
+                                )
+                            )
                         },
                     ) {
                         Icon(
