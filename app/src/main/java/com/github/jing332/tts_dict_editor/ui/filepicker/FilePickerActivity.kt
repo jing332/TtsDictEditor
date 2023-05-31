@@ -1,6 +1,7 @@
 package com.github.jing332.tts_dict_editor.ui.filepicker
 
 import android.Manifest
+import android.R.attr.data
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -8,24 +9,18 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,36 +35,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.modifier.modifierLocalConsumer
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navOptions
-import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.ui.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
+import com.github.jing332.tts_dict_editor.utils.FilePermissionTools
+import com.github.jing332.tts_dict_editor.utils.FileTools
+import com.github.jing332.tts_dict_editor.utils.FileUriTools.toContentUri
+import com.github.jing332.tts_server_android.util.longToast
 import com.github.jing332.tts_server_android.util.toast
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.io.File
 import java.net.URLDecoder
 import java.net.URLEncoder
 
+
 class FilePickerActivity : ComponentActivity() {
+    companion object{
+        const val TAG = "FilePickerActivity"
+    }
+
     private val vm: FilePickerViewModel by viewModels()
 
     private fun checkFileReadPermission() {
@@ -113,6 +107,22 @@ class FilePickerActivity : ComponentActivity() {
                 },
             )
         }
+    }
+
+    private val mFilePicker =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            it?.data?.let { intent ->
+                val fileDoc = DocumentFile.fromTreeUri(this, intent.data!!)
+                this.longToast(fileDoc?.uri.toString())
+                contentResolver.takePersistableUriPermission(
+                    intent.data!!,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            }
+        }
+
+    private fun requestAndroidDataPermission() {
+        mFilePicker.launch(FilePermissionTools.requestPermissionAndroidDataIntent)
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -193,20 +203,30 @@ class FilePickerActivity : ComponentActivity() {
                         selectedList = selectedList,
                         onSelectListChange = { list ->
                             selectedList = list
+                            println("list changed: ${list.size}")
                             confirmBtnEnabled = list.isNotEmpty()
                         },
                         onEnterDir = { model ->
-                            val file = model.file
-                            if (file.absolutePath == CatalogScreenViewModel.UPPER_PATH_NAME) {
+                            if (model.path == CatalogScreenViewModel.UPPER_PATH_NAME) {
                                 navController.popBackStack()
-                            } else {
-                                navController.navigate(
-                                    "picker/${URLEncoder.encode(file.absolutePath, "UTF-8")}",
-                                    navOptions {
-                                        launchSingleTop = false
-                                        restoreState = true
-                                    })
+                                return@CatalogScreen
+                            } else if (FileTools.isAndroidDataPath(model.path)) {
+                                Log.d("picker", "enter path Android/data")
+                                val retUri = FilePermissionTools.isGrantedUriPermission(
+                                    model.path.toContentUri(false)!!, this@FilePickerActivity
+                                )
+                                if (retUri == null){
+                                    requestAndroidDataPermission()
+                                    return@CatalogScreen
+                                }
                             }
+                            navController.navigate(
+                                "picker/${URLEncoder.encode(model.path, "UTF-8")}",
+                                navOptions {
+                                    launchSingleTop = false
+                                    restoreState = true
+                                }
+                            )
                         })
                 }
             }

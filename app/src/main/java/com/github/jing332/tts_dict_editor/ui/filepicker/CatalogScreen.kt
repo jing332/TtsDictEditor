@@ -30,7 +30,7 @@ import java.io.File
 fun CatalogScreen(
     path: String,
     selectedList: List<File>,
-    onEnterDir: (FileItemModel) -> Unit,
+    onEnterDir: (FileModel) -> Unit,
     onSelectListChange: (List<File>) -> Unit,
     vm: CatalogScreenViewModel = viewModel(key = path),
 ) {
@@ -59,30 +59,25 @@ fun CatalogScreen(
     LazyColumn(
         state = listState
     ) {
-        items(models, key = { it.id }, itemContent = { model ->
-            val onCheckChangeFun = remember {
-                { checked: Boolean ->
-                    println("selectedList: ${selectedList.size}")
-                    onSelectListChange.invoke(
-                        selectedList.toMutableList().apply {
-                            if (checked) {
-                                add(model.file)
-                            } else {
-                                remove(model.file)
-                            }
-                            println(checked)
-                            println(size)
-                        }
-                    )
-                }
+        items(models, key = { it.path }, itemContent = { model ->
+            val onCheckChangeFun = { isChecked: Boolean ->
+                onSelectListChange.invoke(
+                    selectedList.toMutableList().apply {
+                        if (isChecked)
+                            add(model.file)
+                        else
+                            remove(model.file)
+                    }
+                )
             }
+
             Item(
                 title = model.name,
                 subTitle = if (model.file.absolutePath == CatalogScreenViewModel.UPPER_PATH_NAME)
                     "返回上一级"
                 else "文件:${model.fileCount} \t 文件夹:${model.folderCount}",
                 isCheckable = model.isCheckable,
-                isChecked = selectedList.contains(model.file),
+                isChecked = selectedList.indexOfFirst { it.absolutePath == model.file.absolutePath } != -1,
                 isDirectory = model.isDirectory,
                 onCheckedChange = onCheckChangeFun,
                 onClickItem = {

@@ -1,74 +1,92 @@
 package com.github.jing332.tts_dict_editor.ui.filepicker
 
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import com.drake.net.utils.withIO
+import com.github.jing332.tts_dict_editor.app
+import com.github.jing332.tts_dict_editor.ui.filepicker.adapter.DocumentFileAdapter
+import com.github.jing332.tts_dict_editor.ui.filepicker.adapter.GeneralFileAdapter
+import com.github.jing332.tts_dict_editor.ui.filepicker.adapter.IFileAdapter
+import com.github.jing332.tts_dict_editor.utils.FileTools
+import com.github.jing332.tts_dict_editor.utils.FileUriTools.toContentUri
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.isActive
 import java.io.File
-import java.io.FileFilter
 import kotlin.coroutines.coroutineContext
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 class CatalogScreenViewModel : ViewModel() {
     companion object {
         internal const val UPPER_PATH_NAME = "/.."
     }
 
-    var models = mutableStateListOf<FileItemModel>()
+    var models = mutableStateListOf<FileModel>()
         private set
 
     var isLoadFinished: Boolean = false
     var listState: LazyListState? = null
+    var currentPath: String = ""
 
-//
-//    val models: SnapshotStateList<ItemModel>
-//        get() = _models
-
+    @OptIn(ExperimentalTime::class)
     @Throws(IllegalArgumentException::class)
     suspend fun loadModels(path: String) {
+        currentPath = path
         withIO {
-            val dirFile = File(path)
-            if (!dirFile.isDirectory)
-                throw IllegalArgumentException("dir is not a directory: $path")
+            val adapter = if (FileTools.isAndroidDataPath(path))
+                DocumentFileAdapter(
+                    app,
+                    DocumentFile.fromTreeUri(
+                        app,
+                        path.toContentUri(isTree = true)!!
+                    )!!
+                )
+            else
+                GeneralFileAdapter(File(path))
+
+            if (!adapter.isDirectory())
+                throw IllegalArgumentException("path is not a directory: $path")
 
             models.clear()
-            dirFile.listFiles(FileFilter {
-                if (coroutineContext.isActive.not()) throw CancellationException()
-                true
-            })?.apply {
-                models.add(
-                    FileItemModel(
-                        name = "上一级目录",
-                        file = File(UPPER_PATH_NAME),
-                        isCheckable = false
-                    )
-                )
-                addModels(filter { it.isDirectory })
-                addModels(filter { it.isFile })
+            val time = measureTime {
+
+                adapter.listFiles().apply {
+                    var list: List<IFileAdapter> =
+                        filter { it.isDirectory() }.sortedBy { it.name() }
+
+
+                    addModels(list)
+                    addModels(filter { it.isFile() }.sortedBy { it.name() })
+                }
             }
+            println("time: ${time}ms")
         }
 
         isLoadFinished = true
     }
 
-    private suspend fun addModels(list: List<File>) {
-        list.forEach { file ->
+    private suspend fun addModels(list: List<IFileAdapter>) {
+        list.forEach { adapter ->
+            if (adapter is DocumentFileAdapter) {
+//                println(adapter.name())
+            }
+
             if (coroutineContext.isActive.not()) throw CancellationException()
             models.add(
-                FileItemModel(
-                    file, file.name,
-                    fileCount = file.listFiles()?.filter { it.isFile }?.size ?: 0,
-                    folderCount = file.listFiles()?.filter { it.isDirectory }?.size ?: 0,
+                FileModel(
+                    File(""), adapter.name(),
+                    fileCount = adapter.fileCount(),
+                    folderCount = adapter.directoryCount(),
+                    isDirectory = adapter.isDirectory(),
+                    path = "$currentPath${File.separator}${adapter.name()}"
                 )
             )
         }
     }
 
-    fun updateModelsSelected(model: FileItemModel, it: Boolean) {
-        println("ViewModle: $it")
+    fun updateModelsSelected(model: FileModel, it: Boolean) {
         val i = models.indexOf(model)
         if (i != -1) {
             models.toList().forEachIndexed { index, itemModel ->
