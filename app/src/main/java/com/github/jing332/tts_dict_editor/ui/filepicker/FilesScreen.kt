@@ -1,5 +1,6 @@
 package com.github.jing332.tts_dict_editor.ui.filepicker
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,20 +25,25 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.jing332.tts_dict_editor.R
+import com.github.jing332.tts_dict_editor.utils.FileUriTools
+import com.github.jing332.tts_dict_editor.utils.FileUtils
 import java.io.File
+
+
+private const val TAG = "FilesScreen"
 
 @Composable
 fun CatalogScreen(
     path: String,
-    selectedList: List<File>,
+    selectedList: List<FileModel>,
     onEnterDir: (FileModel) -> Unit,
-    onSelectListChange: (List<File>) -> Unit,
-    vm: CatalogScreenViewModel = viewModel(key = path),
+    onSelectListChange: (List<FileModel>) -> Unit,
+    vm: FilesScreenViewModel = viewModel(key = path),
 ) {
     val listState = rememberLazyListState()
     val models = remember { vm.models }
     LaunchedEffect(vm.hashCode()) {
-        println("to path: ${vm.hashCode()} $path")
+        Log.d(TAG, "LaunchedEffect: $path")
         if (!vm.isLoadFinished)
             vm.loadModels(path)
 
@@ -48,7 +54,6 @@ fun CatalogScreen(
 
     DisposableEffect(vm.hashCode()) {
         onDispose {
-            println("dispose: ${vm.hashCode()}")
             vm.listState = LazyListState(
                 listState.firstVisibleItemIndex,
                 listState.firstVisibleItemScrollOffset
@@ -64,25 +69,30 @@ fun CatalogScreen(
                 onSelectListChange.invoke(
                     selectedList.toMutableList().apply {
                         if (isChecked)
-                            add(model.file)
+                            add(model)
                         else
-                            remove(model.file)
+                            remove(model)
                     }
                 )
             }
 
             Item(
                 title = model.name,
-                subTitle = if (model.file.absolutePath == CatalogScreenViewModel.UPPER_PATH_NAME)
+                subTitle =
+                if (model.path == FilesScreenViewModel.UPPER_PATH_NAME)
                     "返回上一级"
-                else "文件:${model.fileCount} \t 文件夹:${model.folderCount}",
+                else if (model.isDirectory) "文件:${model.fileCount} \t 文件夹:${model.folderCount}"
+                else {
+                    "大小:${FileUtils.formatFileSize(model.fileSize)}"
+                },
+
                 isCheckable = model.isCheckable,
-                isChecked = selectedList.indexOfFirst { it.absolutePath == model.file.absolutePath } != -1,
+                isChecked = selectedList.indexOfFirst { it.path == model.path } != -1,
                 isDirectory = model.isDirectory,
                 onCheckedChange = onCheckChangeFun,
                 onClickItem = {
                     if (model.isDirectory) onEnterDir.invoke(model)
-                    else onCheckChangeFun.invoke(selectedList.contains(model.file).not())
+                    else onCheckChangeFun.invoke(selectedList.contains(model).not())
                 }
             )
 

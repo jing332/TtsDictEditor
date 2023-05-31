@@ -1,7 +1,7 @@
 package com.github.jing332.tts_dict_editor.ui.filepicker
 
 import android.Manifest
-import android.R.attr.data
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -60,7 +60,7 @@ import java.net.URLEncoder
 
 
 class FilePickerActivity : ComponentActivity() {
-    companion object{
+    companion object {
         const val TAG = "FilePickerActivity"
     }
 
@@ -109,6 +109,7 @@ class FilePickerActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("WrongConstant")
     private val mFilePicker =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             it?.data?.let { intent ->
@@ -116,7 +117,7 @@ class FilePickerActivity : ComponentActivity() {
                 this.longToast(fileDoc?.uri.toString())
                 contentResolver.takePersistableUriPermission(
                     intent.data!!,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    intent.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                 )
             }
         }
@@ -161,7 +162,9 @@ class FilePickerActivity : ComponentActivity() {
                     content = { pad ->
                         Surface(modifier = Modifier.padding(pad)) {
                             filePermissionDialog()
-                            pickerScreen { title = it }
+                            pickerScreen("/storage/emulated/0/Android/data/bin.mt.plus"/*FileTools.PATH_EXTERNAL_STORAGE + "/Android"*/) {
+                                title = it
+                            }
                         }
                     }
 
@@ -171,11 +174,9 @@ class FilePickerActivity : ComponentActivity() {
     }
 
     @Composable
-    fun pickerScreen(onCurrentPathChanged: (String) -> Unit = {}) {
+    fun pickerScreen(initialPath: String, onCurrentPathChanged: (String) -> Unit = {}) {
         Column {
-            var confirmBtnEnabled by remember {
-                mutableStateOf(false)
-            }
+            var confirmBtnEnabled by remember { mutableStateOf(false) }
             val navController = rememberNavController()
             NavHost(
                 modifier = Modifier.weight(1f),
@@ -191,11 +192,22 @@ class FilePickerActivity : ComponentActivity() {
                 ) {
                     val path = (it.arguments?.getString("path")?.run {
                         URLDecoder.decode(this, "UTF-8")
-                    } ?: "").ifEmpty { Environment.getExternalStorageDirectory().absolutePath }
+                    } ?: "").ifEmpty { initialPath }
                     onCurrentPathChanged.invoke(path)
 
+                    if (FileTools.isAndroidDataPath(path)) {
+                        val retUri = FilePermissionTools.isGrantedUriPermission(
+                            path.toContentUri(false)!!, this@FilePickerActivity
+                        )
+                        if (retUri == null) {
+                            requestAndroidDataPermission()
+                            navController.navigateUp()
+                            return@composable
+                        }
+                    }
+
                     var selectedList by remember {
-                        mutableStateOf(listOf<File>())
+                        mutableStateOf(listOf(FileModel(path = "")))
                     }
 
                     CatalogScreen(
@@ -203,22 +215,12 @@ class FilePickerActivity : ComponentActivity() {
                         selectedList = selectedList,
                         onSelectListChange = { list ->
                             selectedList = list
-                            println("list changed: ${list.size}")
                             confirmBtnEnabled = list.isNotEmpty()
                         },
                         onEnterDir = { model ->
-                            if (model.path == CatalogScreenViewModel.UPPER_PATH_NAME) {
+                            if (model.path == FilesScreenViewModel.UPPER_PATH_NAME) {
                                 navController.popBackStack()
                                 return@CatalogScreen
-                            } else if (FileTools.isAndroidDataPath(model.path)) {
-                                Log.d("picker", "enter path Android/data")
-                                val retUri = FilePermissionTools.isGrantedUriPermission(
-                                    model.path.toContentUri(false)!!, this@FilePickerActivity
-                                )
-                                if (retUri == null){
-                                    requestAndroidDataPermission()
-                                    return@CatalogScreen
-                                }
                             }
                             navController.navigate(
                                 "picker/${URLEncoder.encode(model.path, "UTF-8")}",

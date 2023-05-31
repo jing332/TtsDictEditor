@@ -1,7 +1,9 @@
 package com.github.jing332.tts_dict_editor.ui.filepicker
 
+import android.util.Log
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import com.drake.net.utils.withIO
@@ -15,22 +17,23 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.isActive
 import java.io.File
 import kotlin.coroutines.coroutineContext
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
 
-class CatalogScreenViewModel : ViewModel() {
+class FilesScreenViewModel : ViewModel() {
     companion object {
+        private const val TAG = "FilesScreenViewModel"
         internal const val UPPER_PATH_NAME = "/.."
     }
 
     var models = mutableStateListOf<FileModel>()
         private set
 
+    var isReadErrorState = mutableStateOf(true)
+        private set
+
     var isLoadFinished: Boolean = false
     var listState: LazyListState? = null
-    var currentPath: String = ""
+    private var currentPath: String = ""
 
-    @OptIn(ExperimentalTime::class)
     @Throws(IllegalArgumentException::class)
     suspend fun loadModels(path: String) {
         currentPath = path
@@ -46,22 +49,22 @@ class CatalogScreenViewModel : ViewModel() {
             else
                 GeneralFileAdapter(File(path))
 
-            if (!adapter.isDirectory())
-                throw IllegalArgumentException("path is not a directory: $path")
+            if (!adapter.isDirectory()) {
+                Log.w(TAG, "path is not a directory or not readable: $path")
+                isReadErrorState.value = false
+
+                return@withIO
+            }
 
             models.clear()
-            val time = measureTime {
-
-                adapter.listFiles().apply {
-                    var list: List<IFileAdapter> =
-                        filter { it.isDirectory() }.sortedBy { it.name() }
+            adapter.listFiles().apply {
+                var list: List<IFileAdapter> =
+                    filter { it.isDirectory() }.sortedBy { it.name() }
 
 
-                    addModels(list)
-                    addModels(filter { it.isFile() }.sortedBy { it.name() })
-                }
+                addModels(list)
+                addModels(filter { it.isFile() }.sortedBy { it.name() })
             }
-            println("time: ${time}ms")
         }
 
         isLoadFinished = true
@@ -76,11 +79,11 @@ class CatalogScreenViewModel : ViewModel() {
             if (coroutineContext.isActive.not()) throw CancellationException()
             models.add(
                 FileModel(
-                    File(""), adapter.name(),
+                    path = "$currentPath${File.separator}${adapter.name()}",
+                    name = adapter.name(),
                     fileCount = adapter.fileCount(),
                     folderCount = adapter.directoryCount(),
                     isDirectory = adapter.isDirectory(),
-                    path = "$currentPath${File.separator}${adapter.name()}"
                 )
             )
         }

@@ -1,4 +1,4 @@
-package com.github.jing332.tts_server_android.util
+package com.github.jing332.tts_dict_editor.utils
 
 import android.content.ContentResolver
 import android.content.Context
@@ -11,9 +11,20 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.net.URLConnection
+import kotlin.math.ln
+import kotlin.math.pow
 
 
 object FileUtils {
+    fun formatFileSize(bytes: Long): String {
+        val unit = 1024
+        if (bytes < unit) return "$bytes B"
+        val exp = (ln(bytes.toDouble()) / ln(unit.toDouble())).toInt()
+        val pre = "KMGTPE"[exp - 1] + "i"
+        return String.format("%.1f %sB", bytes / unit.toDouble().pow(exp.toDouble()), pre)
+    }
+
+
     /**
      * 按行读取txt
      */
