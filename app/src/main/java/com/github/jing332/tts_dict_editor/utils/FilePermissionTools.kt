@@ -21,7 +21,7 @@ object FilePermissionTools {
         val permissions = context.contentResolver.persistedUriPermissions
         println("src: $uri")
 
-        var tempUri: String? = null
+        var tempUri: String?
         //遍历并判断请求的uri字符串是否已经被授权
         for (uriP in permissions) {
             tempUri = uriP.uri.toString()

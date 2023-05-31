@@ -1,4 +1,4 @@
-package com.github.jing332.tts_dict_editor.ui
+package com.github.jing332.tts_dict_editor.ui.edit
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf

@@ -16,6 +16,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -34,8 +36,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
@@ -44,6 +49,7 @@ import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.data.appDb
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
 import com.github.jing332.tts_dict_editor.ui.Widgets.TransparentSystemBars
+import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditActivity
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
 import me.saket.cascade.CascadeDropdownMenu
@@ -68,37 +74,32 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppTheme {
                 TransparentSystemBars()
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            modifier = Modifier.fillMaxWidth(),
-                            title = { Text(text = stringResource(id = R.string.app_name)) },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            ),
-                            actions = {
-                                IconButton(onClick = {
-                                    mDictFileActivityLauncher.launch(DictFile())
-                                }) {
-                                    Icon(Icons.Filled.Add, stringResource(id = R.string.add))
-                                }
-
-                                IconButton(onClick = {
-                                }) {
-                                    Icon(
-                                        Icons.Filled.MoreVert,
-                                        stringResource(id = R.string.more_options)
-                                    )
-                                }
+                Scaffold(topBar = {
+                    TopAppBar(modifier = Modifier.fillMaxWidth(),
+                        title = { Text(text = stringResource(id = R.string.app_name)) },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
+                        actions = {
+                            IconButton(onClick = {
+                                mDictFileActivityLauncher.launch(DictFile())
+                            }) {
+                                Icon(Icons.Filled.Add, stringResource(id = R.string.add))
                             }
-                        )
-                    },
-                    content = { pad ->
-                        Surface(modifier = Modifier.padding(pad)) {
-                            dictFilesScreen()
-                        }
+
+                            IconButton(onClick = {}) {
+                                Icon(
+                                    Icons.Filled.MoreVert,
+                                    stringResource(id = R.string.more_options)
+                                )
+                            }
+                        })
+                }, content = { pad ->
+                    Surface(modifier = Modifier.padding(pad)) {
+                        dictFilesScreen()
                     }
+                }
 
                 )
             }
@@ -111,23 +112,20 @@ class MainActivity : ComponentActivity() {
         val models = vm.dictFilesFlow.collectAsState(initial = listOf())
         LazyColumn {
             items(models.value.toTypedArray(), key = { it.id }) {
-                dictFileItem(
-                    it.copy(
-                        filePath = this@MainActivity.getPath(Uri.parse(it.filePath), false) ?: ""
-                    ),
-                    onReplaceRuleEdit = {
+                dictFileItem(it.copy(
+                    filePath = this@MainActivity.getPath(Uri.parse(it.filePath), false) ?: ""
+                ), onReplaceRuleEdit = {
 
-                    },
-                    onEdit = {
-                        mDictFileActivityLauncher.launch(it)
-                    },
-                    onDelete = {
-                        appDb.dictFileDao.delete(it)
-                    })
+                }, onEdit = {
+                    mDictFileActivityLauncher.launch(it)
+                }, onDelete = {
+                    appDb.dictFileDao.delete(it)
+                })
             }
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun dictFileItem(
         dictFile: DictFile,
@@ -135,7 +133,10 @@ class MainActivity : ComponentActivity() {
         onEdit: () -> Unit,
         onDelete: () -> Unit,
     ) {
-        ElevatedCard(
+        Card(
+            onClick = {},
+            colors = CardDefaults.elevatedCardColors(),
+            elevation = CardDefaults.elevatedCardElevation(),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 4.dp, vertical = 8.dp)
@@ -158,10 +159,8 @@ class MainActivity : ComponentActivity() {
                         end.linkTo(btnEdit.start)
                         top.linkTo(parent.top)
                         bottom.linkTo(txtInfo.top)
-                    }
-                )
-                Text(
-                    text = dictFile.filePath,
+                    })
+                Text(text = dictFile.filePath,
                     textAlign = TextAlign.Start,
                     maxLines = 5,
                     overflow = TextOverflow.Ellipsis,
@@ -175,41 +174,33 @@ class MainActivity : ComponentActivity() {
                     })
 
 
-                IconButton(
-                    modifier = Modifier.constrainAs(btnEdit) {
-                        end.linkTo(btnMore.start)
-                        top.linkTo(parent.top)
-                        bottom.linkTo(parent.bottom)
-                    },
-                    onClick = {
-                        onEdit.invoke()
-                    }
-                ) {
+                IconButton(modifier = Modifier.constrainAs(btnEdit) {
+                    end.linkTo(btnMore.start)
+                    top.linkTo(parent.top)
+                    bottom.linkTo(parent.bottom)
+                }, onClick = {
+                    onEdit.invoke()
+                }) {
                     Icon(Icons.Filled.Edit, stringResource(R.string.desc_edit, dictFile.name))
                 }
 
                 var isMoreOptionsVisible by rememberSaveable { mutableStateOf(false) }
 
-                IconButton(
-                    onClick = {
-                        isMoreOptionsVisible = true
-                    },
-                    modifier = Modifier.constrainAs(btnMore) {
-                        end.linkTo(parent.end)
-                        top.linkTo(parent.top)
-                        bottom.linkTo(parent.bottom)
-                    }
-                ) {
+                IconButton(onClick = {
+                    isMoreOptionsVisible = true
+                }, modifier = Modifier.constrainAs(btnMore) {
+                    end.linkTo(parent.end)
+                    top.linkTo(parent.top)
+                    bottom.linkTo(parent.bottom)
+                }) {
                     Icon(Icons.Filled.MoreVert, stringResource(R.string.more_options))
 
                     val menuState = rememberCascadeState()
-                    CascadeDropdownMenu(
-                        state = menuState,
+                    CascadeDropdownMenu(state = menuState,
                         expanded = isMoreOptionsVisible,
                         onDismissRequest = { isMoreOptionsVisible = false }) {
 
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.delete)) },
+                        DropdownMenuItem(text = { Text(stringResource(R.string.delete)) },
                             trailingIcon = {
                                 Icon(
                                     Icons.Filled.Delete,
@@ -218,17 +209,22 @@ class MainActivity : ComponentActivity() {
                                 )
                             },
                             children = {
-                                androidx.compose.material3.DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.confirm_deletion)) },
-                                    onClick = {
-                                        onDelete.invoke()
-                                        isMoreOptionsVisible = false
-                                    }
-                                )
-                                androidx.compose.material3.DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.cancel)) },
-                                    onClick = { menuState.navigateBack() }
-                                )
+                                androidx.compose.material3.DropdownMenuItem(text = {
+                                    Text(
+                                        stringResource(R.string.confirm_deletion),
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }, onClick = {
+                                    onDelete.invoke()
+                                    isMoreOptionsVisible = false
+                                })
+                                androidx.compose.material3.DropdownMenuItem(text = {
+                                    Text(
+                                        stringResource(R.string.cancel)
+                                    )
+                                },
+                                    onClick = { menuState.navigateBack() })
                             })
                     }
                 }

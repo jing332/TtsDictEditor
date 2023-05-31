@@ -18,7 +18,7 @@ class RuleEditViewModel : ViewModel() {
 
 
     fun init(replaceRule: ReplaceRule?) {
-        mReplaceRule = mReplaceRule ?: ReplaceRule()
+        mReplaceRule = replaceRule ?: ReplaceRule()
         mReplaceRule?.let { rule ->
             nameState.value = rule.name
             patternState.value = rule.pattern

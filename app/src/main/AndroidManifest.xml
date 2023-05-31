@@ -25,6 +25,11 @@
         android:theme="@style/Theme.App"
         tools:targetApi="31">
         <activity
+            android:name=".ui.replace.RuleManagerActivity"
+            android:exported="false"
+            android:label="@string/title_activity_rule_manager"
+            android:theme="@style/Theme.App" />
+        <activity
             android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
@@ -33,17 +38,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".ui.DictFileEditActivity" />
-
+        <activity android:name=".ui.edit.DictFileEditActivity" />
         <activity
             android:name=".ui.filepicker.FilePickerActivity"
             android:exported="true" />
-
         <activity
             android:name=".ui.replace.edit.RuleEditActivity"
             android:exported="true" />
-
     </application>
 
 </manifest>

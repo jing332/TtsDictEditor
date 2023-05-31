@@ -1,4 +1,4 @@
-package com.github.jing332.tts_dict_editor.ui
+package com.github.jing332.tts_dict_editor.ui.edit
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,7 +7,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,6 +34,7 @@ import androidx.core.view.WindowCompat
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.const.IntentKeys
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
+import com.github.jing332.tts_dict_editor.ui.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 
 @Suppress("DEPRECATION")
