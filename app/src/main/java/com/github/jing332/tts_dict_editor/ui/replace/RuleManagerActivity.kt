@@ -4,8 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -25,14 +27,18 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.core.view.WindowCompat
 import com.github.jing332.tts_dict_editor.R
+import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
+import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
+import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.ui.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 
@@ -92,37 +98,36 @@ class RuleManagerActivity : ComponentActivity() {
 
             groups.add(
                 GroupWithReplaceRule(
-                    group = Group("QWQ-$it", id = it.toLong()),
+                    group = ReplaceRuleGroup("QWQ-$it", id = it.toLong()),
                     list = list
                 )
             )
         }
+
         // Keys
-        val expandedGroups = remember { mutableStateListOf<Long>() }
+        val expandedGroups =
+            remember { mutableStateListOf(*groups.map { it.group.id }.toTypedArray()) }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             for ((index, groupWithRule) in groups.withIndex()) {
                 stickyHeader(key = "group_${index}_${groupWithRule.group.id}") {
-                    Text(
-                        text = groupWithRule.group.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFF2F4FB))
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
-                            .clickable {
-                                if (expandedGroups.contains(groupWithRule.group.id))
-                                    expandedGroups.remove(groupWithRule.group.id)
-                                else
-                                    expandedGroups.add(groupWithRule.group.id)
-                            },
-                        fontWeight = FontWeight.W700,
-                        color = Color(0xFF0079D3)
-                    )
+                    GroupItem(
+                        name = groupWithRule.group.name,
+                        isExpanded = expandedGroups.contains(groupWithRule.group.id)
+                    ) {
+                        if (expandedGroups.contains(groupWithRule.group.id))
+                            expandedGroups.remove(groupWithRule.group.id)
+                        else
+                            expandedGroups.add(groupWithRule.group.id)
+                    }
                 }
 
                 groupWithRule.list.forEach { replaceRule ->
                     item(key = "${index}_$${replaceRule.id}") {
                         if (expandedGroups.contains(groupWithRule.group.id))
-                            ReplaceRuleItem(replaceRule.name)
+                            ReplaceRuleItem(
+                                replaceRule.name,
+                                modifier = Modifier.animateItemPlacement()
+                            )
                     }
                 }
 
@@ -131,15 +136,58 @@ class RuleManagerActivity : ComponentActivity() {
     }
 
     @Composable
-    fun ReplaceRuleItem(name: String) {
-        ConstraintLayout(modifier = Modifier.fillMaxWidth()) {
-            val (txtName) = createRefs()
-            Text(name, modifier = Modifier.constrainAs(txtName) {
-                start.linkTo(parent.start)
-                top.linkTo(parent.top)
-                bottom.linkTo(parent.bottom)
-            })
+    fun GroupItem(name: String, isExpanded: Boolean, onClick: () -> Unit) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable { onClick.invoke() },
+        ) {
+            Image(
+                modifier = Modifier.align(Alignment.CenterVertically),
+                painter = painterResource(id = if (isExpanded) R.drawable.ic_arrow_expand else R.drawable.ic_arrow_collapse),
+                contentDescription = if (isExpanded) "已展开" else "已收起",
+            )
+            Text(
+                text = name,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.CenterVertically)
+                    .weight(1f),
+                fontWeight = FontWeight.W700,
+                color = Color(0xFF0079D3)
+            )
+            IconButton(onClick = {}, modifier = Modifier.padding(end = 10.dp)) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = stringResource(id = R.string.more_options),
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+            }
+
         }
+    }
+
+    @Composable
+    fun ReplaceRuleItem(name: String, modifier: Modifier) {
+        Row(modifier = modifier.fillMaxSize()) {
+            Text(
+                name,
+                maxLines = 1,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+
+            IconButton(onClick = { /*TODO*/ }) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = stringResource(id = R.string.more_options),
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+            }
+        }
+
     }
 
 

@@ -1,4 +1,4 @@
-package com.github.jing332.tts_dict_editor.ui.replace
+package com.github.jing332.tts_dict_editor.help
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
@@ -13,5 +13,6 @@ data class ReplaceRule(
     val name: String = "",
     val pattern: String = "",
     val replacement: String = "",
-    val isRegex: Boolean = false
+    val isRegex: Boolean = false,
+    var order: Int = 0
 ) : Parcelable

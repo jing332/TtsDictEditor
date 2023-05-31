@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,7 +36,7 @@ import androidx.core.view.WindowCompat
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.const.IntentKeys
 import com.github.jing332.tts_dict_editor.ui.Widgets
-import com.github.jing332.tts_dict_editor.ui.replace.ReplaceRule
+import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 
 @Suppress("DEPRECATION")
@@ -108,37 +109,31 @@ class RuleEditActivity : ComponentActivity() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedTextField(
                 label = { Text(stringResource(R.string.name)) },
                 value = nameValue,
                 onValueChange = onNameValueChange,
-                modifier = Modifier
-                    .padding(vertical = 4.dp)
-                    .fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 label = { Text(stringResource(R.string.pattern)) },
                 value = patternValue,
                 onValueChange = onReplaceValueChange,
-                modifier = Modifier
-                    .padding(vertical = 4.dp)
-                    .fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 label = { Text(stringResource(R.string.replacement)) },
                 value = replacementValue,
                 onValueChange = onReplacementValueChange,
-                modifier = Modifier
-                    .padding(vertical = 4.dp)
-                    .fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             )
 
             Row(
                 modifier = Modifier
-                    .padding(vertical = 4.dp)
                     .minimumInteractiveComponentSize()
                     .clickable {
                         onIsRegexChange(!isRegex)

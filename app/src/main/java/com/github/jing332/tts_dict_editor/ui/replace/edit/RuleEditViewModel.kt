@@ -2,7 +2,7 @@ package com.github.jing332.tts_dict_editor.ui.replace.edit
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.github.jing332.tts_dict_editor.ui.replace.ReplaceRule
+import com.github.jing332.tts_dict_editor.help.ReplaceRule
 
 class RuleEditViewModel : ViewModel() {
     var nameState = mutableStateOf("")
