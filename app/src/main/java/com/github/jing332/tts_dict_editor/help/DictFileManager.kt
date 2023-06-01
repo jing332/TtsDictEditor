@@ -1,6 +1,5 @@
 package com.github.jing332.tts_dict_editor.help
 
-import com.github.jing332.tts_dict_editor.help.DictFileManager.Companion.toTxt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -15,9 +14,16 @@ class DictFileManager() {
     companion object {
         const val TAG = "DictFileLoader"
 
+        private const val GROUP_LABEL = "GROUP"
         private const val NOTE_LABEL = '#'
+        private const val DISABLED_LABEL = "DISABLED" // 禁用 例如 # DISABLED ...=...
         private const val REGEXP_START_LABEL = "r:\"^"
         private const val REGEXP_END_LABEL = "$\"="
+
+        private const val RESULT_RESET = 0 // 中断
+        private const val RESULT_CONTINUE = 1 // 跳过
+        private const val RESULT_END = 2 // 结束
+
 
         private val jsonBuilder by lazy {
             Json {
@@ -27,15 +33,11 @@ class DictFileManager() {
         }
 
         fun List<GroupWithReplaceRule>.toTxt(): String {
-            val groupSet = this.distinctBy { it.group.id }
-            val groupTxt = jsonBuilder.encodeToString(groupSet.map { it.group })
-
             val sb = StringBuilder()
-            sb.appendLine("$NOTE_LABEL $groupTxt")
             forEach {
-                sb.appendLine("$NOTE_LABEL START GROUP: ${it.group.name}")
+                sb.appendLine("$NOTE_LABEL $GROUP_LABEL ${jsonBuilder.encodeToString(it.group)}")
                 sb.append(encodeReplaceRule(it.list))
-                sb.appendLine("$NOTE_LABEL END GROUP: ${it.group.name}")
+                sb.appendLine("$NOTE_LABEL END GROUP ${it.group.name} (${it.group.id})")
                 sb.appendLine().appendLine()
             }
 
@@ -46,17 +48,19 @@ class DictFileManager() {
             val sb = StringBuilder()
             rules.forEach {
                 val jStr = jsonBuilder.encodeToString(
-                    it.copy(
-                        pattern = "",
-                        replacement = "",
-                        isRegex = false
-                    )
+                    it.copy(pattern = "", replacement = "", isRegex = false)
                 )
                 sb.appendLine("# $jStr")
-                if (it.isRegex)
-                    sb.appendLine("$REGEXP_START_LABEL${it.pattern}$REGEXP_END_LABEL${it.replacement}")
+                val line = if (it.isRegex)
+                    "$REGEXP_START_LABEL${it.pattern}$REGEXP_END_LABEL${it.replacement}"
                 else
-                    sb.appendLine("${it.pattern}=${it.replacement}")
+                    "${it.pattern}=${it.replacement}"
+
+                if (it.isEnabled)
+                    sb.appendLine(line)
+                else
+                    sb.appendLine("$NOTE_LABEL $DISABLED_LABEL $line")
+
                 sb.appendLine()
             }
             return sb.toString()
@@ -72,36 +76,102 @@ class DictFileManager() {
     }
 
     /**
+     * 合并 [rules] 和 [groups]
+     */
+    fun groupWithReplaceRules(): List<GroupWithReplaceRule> {
+        if (groups.indexOfFirst { it.id == 0L } == -1)
+            groups.add(0, ReplaceRuleGroup("默认分组"))
+
+        return groups.map { group ->
+            GroupWithReplaceRule(
+                group,
+                rules.filter { it.groupId == group.id }.sortedBy { it.order }
+            )
+        }
+    }
+
+
+    suspend fun load(s: String) {
+        load(s.byteInputStream())
+    }
+
+    /**
      * 加载后自动 close()
      */
     suspend fun load(inputStream: InputStream) {
         withContext(Dispatchers.IO) {
             inputStream.use {
                 val buffered = it.source().buffer()
+                var lines = 0
+                var infoRule = ReplaceRule()
                 while (coroutineContext.isActive) {
                     val line = buffered.readUtf8Line() ?: break
-                    parseSingleLine(line.trim())
+                    println(line)
+                    lines++
+                    kotlin.runCatching {
+                        when (parseSingleLine(line.trimStart(), infoRule)) {
+                            RESULT_RESET -> infoRule = ReplaceRule()
+                            RESULT_CONTINUE -> {}
+                            RESULT_END -> {
+                                if (infoRule.id == 0L) {
+                                    infoRule.id = System.currentTimeMillis() + lines
+                                }
+                                rules.add(infoRule)
+                                infoRule = ReplaceRule()
+                            }
+
+                            else -> {}
+                        }
+                    }.onFailure { t ->
+                        throw DictLoadException(
+                            lines = lines,
+                            message = "第${lines}行解析失败：${t.localizedMessage}",
+                            cause = t
+                        )
+                    }
                 }
                 buffered.close()
             }
         }
     }
 
-    private fun parseSingleLine(line: String) {
-        if (line.isBlank()) return
+    /**
+     * @return true 表示解析完毕
+     */
+    private fun parseSingleLine(line: String, infoRule: ReplaceRule): Int {
+        if (line.isBlank()) return RESULT_RESET
 
-        var infoRule = ReplaceRule()
+        var formattedLine = line
+
         //判断是否为注释
         if (line.startsWith(NOTE_LABEL)) {
-            val s = line.trimStart(NOTE_LABEL).trim()
-            if (s.startsWith("{") && s.endsWith("}")) {
-                infoRule = jsonBuilder.decodeFromString(s)
-            } else if (s.startsWith("[") && s.endsWith("]")) {
-                val group = jsonBuilder.decodeFromString<ReplaceRuleGroup>(s)
-                groups.add(group)
-            } else return
+            val s = line.trimStart(NOTE_LABEL).trimStart()
+
+            if (s.startsWith(DISABLED_LABEL)) { // 例如 # DISABLED ...=...
+                infoRule.isEnabled = false
+                formattedLine = s.removePrefix(DISABLED_LABEL).trimStart() // 移除 DISABLED
+                //return RESULT_CONTINUE
+            } else if (s.startsWith(GROUP_LABEL)) {
+                groups.add(jsonBuilder.decodeFromString(s))
+                return RESULT_RESET
+            } else if (s.startsWith("{") && s.endsWith("}")) {
+                val parsed: ReplaceRule = jsonBuilder.decodeFromString(s)
+                infoRule.copyFrom(parsed)
+                return RESULT_CONTINUE
+            } else if (s.startsWith("[") && s.trimEnd().endsWith("]")
+                && s.contains("\"id\"") && s.contains("\"name\"")
+            ) { // Group
+                groups.addAll(jsonBuilder.decodeFromString(s))
+                return RESULT_RESET
+            } else return RESULT_RESET
         }
 
+        parseRule(formattedLine, infoRule)
+        return RESULT_END
+    }
+
+    // 解析正文
+    private fun parseRule(line: String, infoRule: ReplaceRule) {
         val regexIndex: Int = line.indexOf(REGEXP_END_LABEL)
         val regexStartIndex: Int = line.indexOf(REGEXP_START_LABEL)
         val length: Int = line.length
@@ -111,12 +181,18 @@ class DictFileManager() {
         if (regexStartIndex != -1 && regexStartIndex < regexIndex && regexIndex < length) {
             val regex = line.substring(regexStartIndex + REGEXP_START_LABEL.length, regexIndex)
             val value: String = line.substring(regexIndex + REGEXP_END_LABEL.length)
-            rules.add(infoRule.copy(pattern = regex, replacement = value, isRegex = true))
-        } else if (length > 3 && index > 0 && index < length) {
+//            rules.add(infoRule.copy(pattern = regex, replacement = value, isRegex = true))
+            infoRule.pattern = regex
+            infoRule.replacement = value
+            infoRule.isRegex = true
+        } else if (length >= 2 && index > 0 && index < length) {
             val key = line.substring(0, index).trim()
             val value = line.substring(index + 1, length).trim()
             if (key.isNotEmpty() && value.isNotEmpty()) {
-                rules.add(infoRule.copy(pattern = key, replacement = value, isRegex = false))
+//                rules.add(infoRule.copy(pattern = key, replacement = value, isRegex = false))
+                infoRule.pattern = key
+                infoRule.replacement = value
+                infoRule.isRegex = false
             }
         }
     }

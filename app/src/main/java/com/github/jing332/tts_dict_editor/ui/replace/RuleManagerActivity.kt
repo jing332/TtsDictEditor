@@ -1,8 +1,10 @@
 package com.github.jing332.tts_dict_editor.ui.replace
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -35,14 +37,21 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.documentfile.provider.DocumentFile
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.jing332.tts_dict_editor.R
-import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
-import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
-import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.ui.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
+import kotlinx.coroutines.launch
 
 class RuleManagerActivity : ComponentActivity() {
+    companion object {
+        const val TAG = "RuleManagerActivity"
+    }
+
+    private val vm: RuleManagerViewModel by viewModels()
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,25 +93,40 @@ class RuleManagerActivity : ComponentActivity() {
                     })
             }
         }
+
+        val uri = intent.data
+        if (uri == null) {
+            Log.e(TAG, "onCreate: uri is null")
+            finish()
+            return
+        }
+
+        lifecycleScope.launch {
+            contentResolver.getType(uri).let {
+                Log.d(TAG, "onCreate: $it")
+            }
+            vm.loadRulesFromDictTxt(contentResolver.openInputStream(uri)!!)
+        }
     }
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun screen() {
-        val groups = mutableListOf<GroupWithReplaceRule>()
-        (1..1000).forEach {
-            val list = mutableListOf<ReplaceRule>()
-            (1..10).forEach { i ->
-                list.add(ReplaceRule(name = "替换规则-$i", id = i.toLong()))
-            }
+        /*        val groups = mutableListOf<GroupWithReplaceRule>()
+                (1..1000).forEach {
+                    val list = mutableListOf<ReplaceRule>()
+                    (1..10).forEach { i ->
+                        list.add(ReplaceRule(name = "替换规则-$i", id = i.toLong()))
+                    }
 
-            groups.add(
-                GroupWithReplaceRule(
-                    group = ReplaceRuleGroup("QWQ-$it", id = it.toLong()),
-                    list = list
-                )
-            )
-        }
+                    groups.add(
+                        GroupWithReplaceRule(
+                            group = ReplaceRuleGroup("QWQ-$it", id = it.toLong()),
+                            list = list
+                        )
+                    )
+                }*/
+        val groups = vm.groupWithRules
 
         // Keys
         val expandedGroups =
@@ -122,12 +146,14 @@ class RuleManagerActivity : ComponentActivity() {
                 }
 
                 groupWithRule.list.forEach { replaceRule ->
-                    item(key = "${index}_$${replaceRule.id}") {
+                    item(key = "${index}_${replaceRule.id}") {
                         if (expandedGroups.contains(groupWithRule.group.id))
                             ReplaceRuleItem(
-                                replaceRule.name,
+                                replaceRule.name.ifBlank { "${replaceRule.pattern} -> ${replaceRule.replacement}" },
                                 modifier = Modifier.animateItemPlacement()
-                            )
+                            ) {
+
+                            }
                     }
                 }
 
@@ -169,14 +195,17 @@ class RuleManagerActivity : ComponentActivity() {
     }
 
     @Composable
-    fun ReplaceRuleItem(name: String, modifier: Modifier) {
-        Row(modifier = modifier.fillMaxSize()) {
+    fun ReplaceRuleItem(name: String, modifier: Modifier, onClick: () -> Unit) {
+        Row(modifier = modifier
+            .fillMaxSize()
+            .clickable { onClick.invoke() }) {
             Text(
                 name,
                 maxLines = 1,
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .align(Alignment.CenterVertically),
             )
 
             IconButton(onClick = { /*TODO*/ }) {

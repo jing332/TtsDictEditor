@@ -117,7 +117,13 @@ class MainActivity : ComponentActivity() {
                 dictFileItem(it.copy(
                     filePath = this@MainActivity.getPath(Uri.parse(it.filePath), false) ?: ""
                 ), onReplaceRuleEdit = {
-                    startActivity(Intent(this@MainActivity, RuleManagerActivity::class.java))
+                    startActivity(
+                        Intent(
+                            this@MainActivity,
+                            RuleManagerActivity::class.java
+                        ).apply {
+                            data = Uri.parse(it.filePath)
+                        })
                 }, onEdit = {
                     mDictFileActivityLauncher.launch(it)
                 }, onDelete = {
