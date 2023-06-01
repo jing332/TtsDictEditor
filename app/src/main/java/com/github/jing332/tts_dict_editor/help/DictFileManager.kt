@@ -3,6 +3,7 @@ package com.github.jing332.tts_dict_editor.help
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.buffer
@@ -25,6 +26,7 @@ class DictFileManager() {
         private const val RESULT_END = 2 // 结束
 
 
+        @OptIn(ExperimentalSerializationApi::class)
         private val jsonBuilder by lazy {
             Json {
                 ignoreUnknownKeys = true
@@ -152,17 +154,14 @@ class DictFileManager() {
                 formattedLine = s.removePrefix(DISABLED_LABEL).trimStart() // 移除 DISABLED
                 //return RESULT_CONTINUE
             } else if (s.startsWith(GROUP_LABEL)) {
-                groups.add(jsonBuilder.decodeFromString(s))
+                val group: ReplaceRuleGroup =
+                    jsonBuilder.decodeFromString(s.removePrefix(GROUP_LABEL).trimStart())
+                groups.add(group)
                 return RESULT_RESET
             } else if (s.startsWith("{") && s.endsWith("}")) {
                 val parsed: ReplaceRule = jsonBuilder.decodeFromString(s)
                 infoRule.copyFrom(parsed)
                 return RESULT_CONTINUE
-            } else if (s.startsWith("[") && s.trimEnd().endsWith("]")
-                && s.contains("\"id\"") && s.contains("\"name\"")
-            ) { // Group
-                groups.addAll(jsonBuilder.decodeFromString(s))
-                return RESULT_RESET
             } else return RESULT_RESET
         }
 

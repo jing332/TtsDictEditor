@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +52,7 @@ import androidx.lifecycle.lifecycleScope
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
+import com.github.jing332.tts_dict_editor.ui.ErrorDialog
 import com.github.jing332.tts_dict_editor.ui.Widgets
 import com.github.jing332.tts_dict_editor.ui.replace.edit.RuleEditActivity
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
@@ -59,6 +61,8 @@ import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
 import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
+import okio.buffer
+import okio.sink
 
 class RuleManagerActivity : ComponentActivity() {
     companion object {
@@ -71,6 +75,13 @@ class RuleManagerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        val uri = intent.data
+        if (uri == null) {
+            Log.e(TAG, "onCreate: uri is null")
+            finish()
+            return
+        }
 
         var titleState by mutableStateOf("")
         var subTitleState by mutableStateOf("")
@@ -160,19 +171,23 @@ class RuleManagerActivity : ComponentActivity() {
                         Surface(modifier = Modifier.padding(pad)) {
                             Screen()
 
+                            vm.saveTxtState?.let { txt -> /* 同步到 dict.txt */
+                                kotlin.runCatching {
+                                    LocalContext.current.contentResolver.openOutputStream(uri)
+                                        ?.use {
+                                            it.write(txt.toByteArray())
+                                            vm.saveTxtState = null
+                                        }
+                                }.onFailure {
+                                    ErrorDialog(title = "保存文件错误", t = it)
+                                }
+                            }
                         }
                     })
 
                 if (isVisibleImportConfig)
                     ImportConfigDialog { isVisibleImportConfig = false }
             }
-        }
-
-        val uri = intent.data
-        if (uri == null) {
-            Log.e(TAG, "onCreate: uri is null")
-            finish()
-            return
         }
 
         titleState = intent.getStringExtra("name") ?: getString(R.string.replace_rule_manager)

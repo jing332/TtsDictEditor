@@ -1,14 +1,19 @@
 package com.github.jing332.tts_dict_editor.ui.replace
 
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.github.jing332.tts_dict_editor.help.DictFileManager
+import com.github.jing332.tts_dict_editor.help.DictFileManager.Companion.toTxt
 import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import java.io.InputStream
 
 class RuleManagerViewModel : ViewModel() {
     val groupWithRules = mutableStateListOf<GroupWithReplaceRule>()
+    var saveTxtState by mutableStateOf(null as String?)
 
     private val dictManager = DictFileManager()
 
@@ -18,6 +23,13 @@ class RuleManagerViewModel : ViewModel() {
         dictManager.groupWithReplaceRules().forEach {
             groupWithRules.add(it)
         }
+    }
+
+    /**
+     * 保存为Txt
+     */
+    fun requestSaveTxt() {
+        saveTxtState = groupWithRules.toTxt()
     }
 
     fun updateOrAddRule(rule: ReplaceRule) {
@@ -44,6 +56,9 @@ class RuleManagerViewModel : ViewModel() {
                 add(rule)
             })
         groupWithRules[0] = newGroupWithRules
+
+        // 同步到 dict.txt
+        requestSaveTxt()
     }
 
     fun deleteRule(rule: ReplaceRule) {
