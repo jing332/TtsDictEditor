@@ -16,4 +16,5 @@
     <string name="replacement">替换为</string>
     <string name="use_regex">使用正则表达式</string>
     <string name="title_activity_rule_manager">RuleManagerActivity</string>
+    <string name="file_path">文件路径</string>
 </resources>

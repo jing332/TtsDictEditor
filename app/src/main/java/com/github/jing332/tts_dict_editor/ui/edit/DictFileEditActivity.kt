@@ -30,12 +30,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.const.IntentKeys
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
+import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
 import com.github.jing332.tts_dict_editor.ui.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
+import com.github.jing332.tts_dict_editor.utils.FileUriTools
+import com.github.jing332.tts_dict_editor.utils.FileUriTools.toContentUri
+import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
 
 @Suppress("DEPRECATION")
 class DictFileEditActivity : ComponentActivity() {
@@ -106,7 +111,7 @@ class DictFileEditActivity : ComponentActivity() {
         }
     }
 
-    private val filepicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) {
+    private val filepicker = registerForActivityResult(AppActivityResultContracts.OpenDocument()) {
         it?.let { uri ->
             contentResolver.takePersistableUriPermission(
                 uri,
@@ -117,8 +122,19 @@ class DictFileEditActivity : ComponentActivity() {
         }
     }
 
+    private fun launchPicker() {
+        filepicker.launch(
+            arrayOf(
+                "${Environment.getExternalStorageDirectory().absolutePath}/Android/data".toContentUri(
+                    false
+                ).toString(),
+                "text/*"
+            )
+        )
+    }
+
     @Composable
-    fun screen() {
+    private fun screen() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -126,7 +142,9 @@ class DictFileEditActivity : ComponentActivity() {
         ) {
             val name by vm.nameState
             OutlinedTextField(
-                value = name, label = { Text("名称") }, onValueChange = {
+                value = name,
+                label = { Text(stringResource(id = R.string.name)) },
+                onValueChange = {
                     vm.updateName(it)
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -136,19 +154,14 @@ class DictFileEditActivity : ComponentActivity() {
 
             val path by vm.filePathState
             OutlinedTextField(
-                value = path, label = { Text("文件路径") }, onValueChange = {
+                value = this@DictFileEditActivity.getPath(path.toUri()) ?: path,
+                label = { Text(stringResource(R.string.file_path)) },
+                onValueChange = {
                     vm.updateFilePath(it)
                 },
                 trailingIcon = {
                     IconButton(
-                        onClick = {
-                            filepicker.launch(
-                                arrayOf(
-                                    "${Environment.getExternalStorageDirectory()}Android/data",
-                                    "text/*"
-                                )
-                            )
-                        },
+                        onClick = { launchPicker() },
                     ) {
                         Icon(
                             Icons.Filled.FileOpen,
