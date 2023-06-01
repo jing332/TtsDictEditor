@@ -1,6 +1,7 @@
 package com.github.jing332.tts_dict_editor.ui.replace
 
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,6 +10,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -40,13 +43,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
-import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.jing332.tts_dict_editor.R
+import com.github.jing332.tts_dict_editor.help.ReplaceRule
+import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
 import com.github.jing332.tts_dict_editor.ui.Widgets
+import com.github.jing332.tts_dict_editor.ui.replace.edit.RuleEditActivity
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
+import com.github.jing332.tts_server_android.util.longToast
+import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
 import kotlinx.coroutines.launch
+import me.saket.cascade.CascadeDropdownMenu
+import me.saket.cascade.rememberCascadeState
 
 class RuleManagerActivity : ComponentActivity() {
     companion object {
@@ -60,7 +68,9 @@ class RuleManagerActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        var titleState by mutableStateOf<String>("")
+        var titleState by mutableStateOf("")
+        var subTitleState by mutableStateOf("")
+
         setContent {
             AppTheme {
                 Widgets.TransparentSystemBars()
@@ -68,14 +78,29 @@ class RuleManagerActivity : ComponentActivity() {
                     topBar = {
                         TopAppBar(
                             modifier = Modifier.fillMaxWidth(),
-                            title = { Text(text = titleState) },
+                            title = {
+                                Column {
+                                    Text(
+                                        text = titleState,
+                                        maxLines = 1,
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+
+                                    Text(
+                                        text = subTitleState,
+                                        maxLines = 2,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                }
+                            },
                             colors = TopAppBarDefaults.topAppBarColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                                 titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                             ),
                             actions = {
                                 IconButton(onClick = {
-
+                                    mEditActivityLauncher.launch(ReplaceRule())
                                 }) {
                                     Icon(Icons.Filled.Add, stringResource(id = R.string.add))
                                 }
@@ -105,33 +130,34 @@ class RuleManagerActivity : ComponentActivity() {
             return
         }
 
-        titleState = intent.getStringExtra("name") ?: "替换规则管理"
+        titleState = intent.getStringExtra("name") ?: getString(R.string.replace_rule_manager)
+        subTitleState =
+            getPath(uri)?.removePrefix(Environment.getExternalStorageDirectory().absolutePath)
+                ?: uri.toString()
 
         lifecycleScope.launch {
-            contentResolver.getType(uri).let {
-                Log.d(TAG, "onCreate: $it")
+            kotlin.runCatching {
+                vm.loadRulesFromDictTxt(contentResolver.openInputStream(uri)!!)
+            }.onFailure {
+                longToast("加载失败: ${it.message}")
             }
-            vm.loadRulesFromDictTxt(contentResolver.openInputStream(uri)!!)
         }
     }
+
+    private val mEditActivityLauncher =
+        registerForActivityResult(
+            AppActivityResultContracts.parcelableDataActivity<ReplaceRule>(
+                RuleEditActivity::class.java
+            )
+        ) {
+            it?.let { rule ->
+                vm.updateOrAddRule(rule)
+            }
+        }
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun screen() {
-        /*        val groups = mutableListOf<GroupWithReplaceRule>()
-                (1..1000).forEach {
-                    val list = mutableListOf<ReplaceRule>()
-                    (1..10).forEach { i ->
-                        list.add(ReplaceRule(name = "替换规则-$i", id = i.toLong()))
-                    }
-
-                    groups.add(
-                        GroupWithReplaceRule(
-                            group = ReplaceRuleGroup("QWQ-$it", id = it.toLong()),
-                            list = list
-                        )
-                    )
-                }*/
         val groups = vm.groupWithRules
 
         // Keys
@@ -142,13 +168,17 @@ class RuleManagerActivity : ComponentActivity() {
                 stickyHeader(key = "group_${index}_${groupWithRule.group.id}") {
                     GroupItem(
                         name = groupWithRule.group.name,
-                        isExpanded = expandedGroups.contains(groupWithRule.group.id)
-                    ) {
-                        if (expandedGroups.contains(groupWithRule.group.id))
-                            expandedGroups.remove(groupWithRule.group.id)
-                        else
-                            expandedGroups.add(groupWithRule.group.id)
-                    }
+                        isExpanded = expandedGroups.contains(groupWithRule.group.id),
+                        onClick = {
+                            if (expandedGroups.contains(groupWithRule.group.id))
+                                expandedGroups.remove(groupWithRule.group.id)
+                            else
+                                expandedGroups.add(groupWithRule.group.id)
+                        },
+                        onDelete = {
+//                            vm.deleteRule()
+                        }
+                    )
                 }
 
                 groupWithRule.list.forEach { replaceRule ->
@@ -156,10 +186,14 @@ class RuleManagerActivity : ComponentActivity() {
                         if (expandedGroups.contains(groupWithRule.group.id))
                             ReplaceRuleItem(
                                 replaceRule.name.ifBlank { "${replaceRule.pattern} -> ${replaceRule.replacement}" },
-                                modifier = Modifier.animateItemPlacement()
-                            ) {
-
-                            }
+                                modifier = Modifier.animateItemPlacement(),
+                                onDelete = {
+                                    vm.deleteRule(replaceRule)
+                                },
+                                onClick = {
+                                    mEditActivityLauncher.launch(replaceRule)
+                                }
+                            )
                     }
                 }
 
@@ -168,7 +202,7 @@ class RuleManagerActivity : ComponentActivity() {
     }
 
     @Composable
-    fun GroupItem(name: String, isExpanded: Boolean, onClick: () -> Unit) {
+    fun GroupItem(name: String, isExpanded: Boolean, onClick: () -> Unit, onDelete: () -> Unit) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -189,19 +223,61 @@ class RuleManagerActivity : ComponentActivity() {
                 fontWeight = FontWeight.W700,
                 color = Color(0xFF0079D3)
             )
-            IconButton(onClick = {}, modifier = Modifier.padding(end = 10.dp)) {
+
+            var isMoreOptionsVisible by remember { mutableStateOf(false) }
+            IconButton(onClick = {
+                isMoreOptionsVisible = true
+            }, modifier = Modifier.padding(end = 10.dp)) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
                     contentDescription = stringResource(id = R.string.more_options),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
+
+                val menuState = rememberCascadeState()
+                CascadeDropdownMenu(state = menuState,
+                    expanded = isMoreOptionsVisible,
+                    onDismissRequest = { isMoreOptionsVisible = false }) {
+
+                    DropdownMenuItem(text = { Text(stringResource(R.string.delete)) },
+                        trailingIcon = {
+                            Icon(
+                                Icons.Filled.Delete,
+                                stringResource(R.string.delete),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        },
+                        children = {
+                            androidx.compose.material3.DropdownMenuItem(text = {
+                                Text(
+                                    stringResource(R.string.confirm_deletion),
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }, onClick = {
+                                onDelete.invoke()
+                                isMoreOptionsVisible = false
+                            })
+                            androidx.compose.material3.DropdownMenuItem(text = {
+                                Text(
+                                    stringResource(R.string.cancel)
+                                )
+                            },
+                                onClick = { menuState.navigateBack() })
+                        })
+                }
             }
 
         }
     }
 
     @Composable
-    fun ReplaceRuleItem(name: String, modifier: Modifier, onClick: () -> Unit) {
+    fun ReplaceRuleItem(
+        name: String,
+        modifier: Modifier,
+        onClick: () -> Unit,
+        onDelete: () -> Unit
+    ) {
         Row(modifier = modifier
             .fillMaxSize()
             .clickable { onClick.invoke() }) {
@@ -214,12 +290,48 @@ class RuleManagerActivity : ComponentActivity() {
                     .align(Alignment.CenterVertically),
             )
 
-            IconButton(onClick = { /*TODO*/ }) {
+            var isMoreOptionsVisible by remember { mutableStateOf(false) }
+            IconButton(onClick = {
+                isMoreOptionsVisible = true
+            }, modifier = Modifier.padding(end = 10.dp)) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
                     contentDescription = stringResource(id = R.string.more_options),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
+
+                val menuState = rememberCascadeState()
+                CascadeDropdownMenu(state = menuState,
+                    expanded = isMoreOptionsVisible,
+                    onDismissRequest = { isMoreOptionsVisible = false }) {
+
+                    DropdownMenuItem(text = { Text(stringResource(R.string.delete)) },
+                        trailingIcon = {
+                            Icon(
+                                Icons.Filled.Delete,
+                                stringResource(R.string.delete),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        },
+                        children = {
+                            androidx.compose.material3.DropdownMenuItem(text = {
+                                Text(
+                                    stringResource(R.string.confirm_deletion),
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }, onClick = {
+                                onDelete.invoke()
+                                isMoreOptionsVisible = false
+                            })
+                            androidx.compose.material3.DropdownMenuItem(text = {
+                                Text(
+                                    stringResource(R.string.cancel)
+                                )
+                            },
+                                onClick = { menuState.navigateBack() })
+                        })
+                }
             }
         }
 

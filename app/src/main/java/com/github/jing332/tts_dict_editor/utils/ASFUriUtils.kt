@@ -17,14 +17,22 @@ object ASFUriUtils {
         return File(path).toUri()
     }
 
+    /**
+     * Content URI 转为 绝对路径
+     * @return 绝对路径, 如果失败则为 null
+     */
     fun Context.getPath(uri: Uri?, isTree: Boolean = false): String? {
         if (uri == null) return null
 
-        if (uri.toString().startsWith("/")) return uri.toString()
-        return if (isTree)
-            getPathFromTree(this, uri)
-        else
-            ASFUriUtils.getPath(this, uri)
+        kotlin.runCatching {
+            if (uri.toString().startsWith("/")) return uri.toString()
+            return if (isTree)
+                getPathFromTree(this, uri)
+            else
+                getPath(this, uri)
+        }
+
+        return null
     }
 
     fun getPathFromTree(context: Context, uri: Uri?): String? {

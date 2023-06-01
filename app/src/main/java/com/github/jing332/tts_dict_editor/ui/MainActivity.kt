@@ -1,6 +1,8 @@
 package com.github.jing332.tts_dict_editor.ui
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -15,11 +17,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,15 +38,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.documentfile.provider.DocumentFile
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.data.appDb
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
@@ -53,9 +55,12 @@ import com.github.jing332.tts_dict_editor.ui.Widgets.TransparentSystemBars
 import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditActivity
 import com.github.jing332.tts_dict_editor.ui.replace.RuleManagerActivity
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
+import com.github.jing332.tts_server_android.util.longToast
+import com.github.jing332.tts_server_android.util.toast
 import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
+
 
 class MainActivity : ComponentActivity() {
     private val vm: MainActivityViewModel by viewModels()
@@ -106,6 +111,46 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+
+        importDictFileFromIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        importDictFileFromIntent(intent)
+    }
+
+    private fun checkFilePermission() {
+        ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE).let {
+            if (it != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                    111
+                );
+            }
+        }
+
+        val permissionCheck =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                111
+            );
+        }
+
+
+    }
+
+    private fun importDictFileFromIntent(intent: Intent?) {
+        intent?.data?.let { uri ->
+            longToast("⚠ 使用此方式导入的文件为临时权限，重启本程序后将无法读写。")
+            mDictFileActivityLauncher.launch(DictFile(filePath = uri.toString()))
+
+            intent.data = null
+        }
     }
 
 
@@ -114,22 +159,27 @@ class MainActivity : ComponentActivity() {
         val models = vm.dictFilesFlow.collectAsState(initial = listOf())
         LazyColumn {
             items(models.value.toTypedArray(), key = { it.id }) {
-                dictFileItem(it.copy(
-                    filePath = this@MainActivity.getPath(Uri.parse(it.filePath), false) ?: ""
-                ), onReplaceRuleEdit = {
-                    startActivity(
-                        Intent(
-                            this@MainActivity,
-                            RuleManagerActivity::class.java
-                        ).apply {
-                            data = Uri.parse(it.filePath)
-                            putExtra("name", it.name)
-                        })
-                }, onEdit = {
-                    mDictFileActivityLauncher.launch(it)
-                }, onDelete = {
-                    appDb.dictFileDao.delete(it)
-                })
+                dictFileItem(
+                    it.copy(
+                        filePath = try {
+                            this@MainActivity.getPath(Uri.parse(it.filePath))
+                        } catch (_: Exception) {
+                            null
+                        } ?: it.filePath,
+                    ), onReplaceRuleEdit = {
+                        startActivity(
+                            Intent(
+                                this@MainActivity,
+                                RuleManagerActivity::class.java
+                            ).apply {
+                                data = Uri.parse(it.filePath)
+                                putExtra("name", it.name)
+                            })
+                    }, onEdit = {
+                        mDictFileActivityLauncher.launch(it)
+                    }, onDelete = {
+                        appDb.dictFileDao.delete(it)
+                    })
             }
         }
     }
@@ -190,7 +240,10 @@ class MainActivity : ComponentActivity() {
                 }, onClick = {
                     onEdit.invoke()
                 }) {
-                    Icon(Icons.Filled.Edit, stringResource(R.string.desc_edit, dictFile.name))
+                    Icon(
+                        Icons.Filled.Settings,
+                        stringResource(R.string.desc_settings_dict_file, dictFile.name)
+                    )
                 }
 
                 var isMoreOptionsVisible by rememberSaveable { mutableStateOf(false) }

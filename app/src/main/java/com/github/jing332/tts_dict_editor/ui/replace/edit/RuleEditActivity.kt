@@ -69,8 +69,9 @@ class RuleEditActivity : ComponentActivity() {
                                         setResult(RESULT_OK, Intent().apply {
                                             putExtra(IntentKeys.KEY_DATA, vm.getRule())
                                         })
+                                        finish()
                                     }) {
-                                    Icon(Icons.Filled.Save, stringResource(id = R.string.add))
+                                    Icon(Icons.Filled.Save, stringResource(id = R.string.save))
                                 }
 
                                 IconButton(onClick = {

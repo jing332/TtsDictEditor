@@ -13,6 +13,7 @@ data class DictFile(
     val id: Long = System.currentTimeMillis(),
 
     val name: String = "",
+    /* Content URI */
     val filePath: String = "",
     val order: Int = 0,
 ) : Parcelable

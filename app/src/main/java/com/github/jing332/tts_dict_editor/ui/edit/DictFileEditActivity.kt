@@ -154,7 +154,11 @@ class DictFileEditActivity : ComponentActivity() {
 
             val path by vm.filePathState
             OutlinedTextField(
-                value = this@DictFileEditActivity.getPath(path.toUri()) ?: path,
+                value = try {
+                    this@DictFileEditActivity.getPath(path.toUri())
+                } catch (_: Exception) {
+                    null
+                } ?: path,
                 label = { Text(stringResource(R.string.file_path)) },
                 onValueChange = {
                     vm.updateFilePath(it)
