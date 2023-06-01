@@ -18,4 +18,12 @@
     <string name="title_activity_rule_manager">RuleManagerActivity</string>
     <string name="file_path">文件路径</string>
     <string name="replace_rule_manager">替换规则管理</string>
+    <string name="import_config">导入</string>
+    <string name="export_config">导出</string>
+    <string name="clipboard">剪贴板</string>
+    <string name="file">文件</string>
+    <string name="url">网络链接</string>
+    <string name="confirm">确定</string>
+    <string name="err_read_file">读取文件失败</string>
+    <string name="error">错误</string>
 </resources>

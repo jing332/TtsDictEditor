@@ -19,16 +19,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Input
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Output
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -70,6 +74,7 @@ class RuleManagerActivity : ComponentActivity() {
 
         var titleState by mutableStateOf("")
         var subTitleState by mutableStateOf("")
+        var isVisibleImportConfig by mutableStateOf(false)
 
         setContent {
             AppTheme {
@@ -105,21 +110,61 @@ class RuleManagerActivity : ComponentActivity() {
                                     Icon(Icons.Filled.Add, stringResource(id = R.string.add))
                                 }
 
+                                var isMoreOptionsVisible by remember {
+                                    mutableStateOf(false)
+                                }
                                 IconButton(onClick = {
+                                    isMoreOptionsVisible = true
                                 }) {
                                     Icon(
                                         Icons.Filled.MoreVert,
                                         stringResource(id = R.string.more_options)
                                     )
+
+                                    CascadeDropdownMenu(
+                                        expanded = isMoreOptionsVisible,
+                                        onDismissRequest = { isMoreOptionsVisible = false }) {
+                                        androidx.compose.material3.DropdownMenuItem(
+                                            text = { Text(getString(R.string.import_config)) },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Filled.Input,
+                                                    "",
+                                                    tint = MaterialTheme.colorScheme.onBackground
+                                                )
+                                            },
+                                            onClick = {
+                                                isVisibleImportConfig = true
+                                            }
+                                        )
+                                        androidx.compose.material3.DropdownMenuItem(
+                                            text = { Text(getString(R.string.export_config)) },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Filled.Output,
+                                                    "",
+                                                    tint = MaterialTheme.colorScheme.onBackground
+                                                )
+                                            },
+                                            onClick = { /*TODO*/ }
+                                        )
+
+//                                        DropdownMenuItem(text = { /*TODO*/ }, children =)
+
+                                    }
                                 }
                             }
                         )
                     },
                     content = { pad ->
                         Surface(modifier = Modifier.padding(pad)) {
-                            screen()
+                            Screen()
+
                         }
                     })
+
+                if (isVisibleImportConfig)
+                    ImportConfigDialog { isVisibleImportConfig = false }
             }
         }
 
@@ -155,9 +200,18 @@ class RuleManagerActivity : ComponentActivity() {
             }
         }
 
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun ImportConfigDialog(onDismiss: () -> Unit) {
+        val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ConfigImportBottomSheet(onImportFromJson = {
+
+        }, onDismiss = onDismiss)
+    }
+
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    fun screen() {
+    private fun Screen() {
         val groups = vm.groupWithRules
 
         // Keys
