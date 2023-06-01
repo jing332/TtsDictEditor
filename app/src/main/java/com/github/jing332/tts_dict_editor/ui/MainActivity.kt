@@ -123,6 +123,7 @@ class MainActivity : ComponentActivity() {
                             RuleManagerActivity::class.java
                         ).apply {
                             data = Uri.parse(it.filePath)
+                            putExtra("name", it.name)
                         })
                 }, onEdit = {
                     mDictFileActivityLauncher.launch(it)
