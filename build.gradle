@@ -3,7 +3,7 @@ buildscript {
         appcompat_version = '1.4.0-beta01'
         compileSdk_version = 33
         kotlin_version = '1.8.21'
-        agp_version = '8.0.0'
+        agp_version = '8.0.2'
         room_version = '2.5.1'
         ksp_version = '1.8.21-1.0.11'
         compose_version = '1.5.0-beta01'
