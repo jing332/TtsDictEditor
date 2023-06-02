@@ -37,4 +37,6 @@
     <string name="test_text">测试文本</string>
     <string name="result_null">空</string>
     <string name="label_result">结果：</string>
+    <string name="failed_to_import">导入失败</string>
+    <string name="import_success_msg">成功导入 %1$d 条规则</string>
 </resources>

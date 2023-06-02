@@ -50,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.github.jing332.tts_dict_editor.R
+import com.github.jing332.tts_dict_editor.const.AppConst
+import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
 import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
@@ -67,6 +70,8 @@ import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_dict_editor.utils.observeNoSticky
 import com.github.jing332.tts_server_android.util.longToast
 import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
+import com.talhafaki.composablesweettoast.main.SweetToast
+import com.talhafaki.composablesweettoast.util.SweetToastUtil
 import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
@@ -112,6 +117,10 @@ class RuleManagerActivity : ComponentActivity() {
             AppTheme {
                 Widgets.TransparentSystemBars()
 
+                var successToast by remember { mutableStateOf<String?>(null) }
+                if (successToast != null)
+                    SweetToastUtil.SweetSuccess(successToast ?: "")
+
                 val coroutineScope = rememberCoroutineScope()
 
                 /* 错误对话框 */
@@ -141,7 +150,7 @@ class RuleManagerActivity : ComponentActivity() {
                     GroupInfoEditDialog(
                         name = name,
                         onConfirm = {
-                            vm.updateGroup(groupInfoEdit!!.copy(name = name))
+                            vm.updateOrAddGroup(groupInfoEdit!!.copy(name = name))
                             groupInfoEdit = null
                         },
                         onNameChange = { name = it },
@@ -268,7 +277,19 @@ class RuleManagerActivity : ComponentActivity() {
                     })
 
                 if (isVisibleImportConfig)
-                    ImportConfigDialog { isVisibleImportConfig = false }
+                    ImportConfigDialog(
+                        onDismissRequest = { isVisibleImportConfig = false },
+                        onImport = {
+                            val count = try {
+                                vm.import(it)
+                            } catch (e: Exception) {
+                                errDialog = getString(R.string.failed_to_import) to e
+                                return@ImportConfigDialog
+                            }
+                            isVisibleImportConfig = false
+                            successToast = getString(R.string.import_success_msg, count)
+                        }
+                    )
             }
         }
 
@@ -288,11 +309,24 @@ class RuleManagerActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun ImportConfigDialog(onDismiss: () -> Unit) {
+    private fun ImportConfigDialog(
+        onDismissRequest: () -> Unit,
+        onImport: (List<GroupWithReplaceRule>) -> Unit
+    ) {
         val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        var selectDialogData by remember {
+            mutableStateOf<List<GroupWithReplaceRule>?>(null)
+        }
         ConfigImportBottomSheet(onImportFromJson = {
-
-        }, onDismiss = onDismiss)
+            selectDialogData = AppConst.json.decodeFromString<List<GroupWithReplaceRule>>(it)
+        }, onDismiss = onDismissRequest)
+        if (selectDialogData != null)
+            ConfigImportSelectDialog(groupWithRules = selectDialogData ?: emptyList(),
+                onConfirm = onImport,
+                onDismissRequest = {
+                    selectDialogData = null
+                }
+            )
     }
 
     @OptIn(ExperimentalFoundationApi::class)

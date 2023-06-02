@@ -78,7 +78,7 @@ class RuleManagerViewModel : ViewModel() {
     /**
      * 更新或添加规则 完毕后自动同步到 dict.txt
      */
-    fun updateOrAddRule(rule: ReplaceRule) {
+    fun updateOrAddRule(rule: ReplaceRule, isUpdate: Boolean = true) {
         val idx = list.indexOfFirst { it is ReplaceRule && it.id == rule.id }
         if (idx > -1) { // Update
             val src = list[idx] as ReplaceRule
@@ -98,23 +98,26 @@ class RuleManagerViewModel : ViewModel() {
             }
         }
 
-        requestSaveTxt()
+        if (isUpdate) requestSaveTxt()
     }
 
     /**
      * 删除规则 完毕后自动同步到 dict.txt
      */
-    suspend fun deleteRule(rule: ReplaceRule) {
+    suspend fun deleteRule(rule: ReplaceRule, isUpdate: Boolean = true) {
         val idx = list.indexOfFirst { it is ReplaceRule && it.id == rule.id }
         if (idx > -1) {
             list.removeAt(idx)
         }
-        // 同步到 dict.txt
-        requestSaveTxt()
+        if (isUpdate) requestSaveTxt()
     }
 
-    fun updateGroup(group: ReplaceRuleGroup) {
-
+    fun updateOrAddGroup(group: ReplaceRuleGroup) {
+        val idx = findGroupIndex(group)
+        if (idx > -1) {
+            list[idx] = group
+        } else
+            list.add(group)
 
         // 同步到 dict.txt
         requestSaveTxt()
@@ -135,5 +138,19 @@ class RuleManagerViewModel : ViewModel() {
 
     private fun findRuleIndex(rule: ReplaceRule): Int =
         list.indexOfFirst { it is ReplaceRule && it.id == rule.id }
+
+    fun import(gwrs: List<GroupWithReplaceRule>): Int {
+        var count = 0
+        for (gwr in gwrs) {
+            updateOrAddGroup(gwr.group)
+            for (rule in gwr.list) {
+                updateOrAddRule(rule)
+                count++
+            }
+        }
+
+        requestSaveTxt()
+        return count
+    }
 
 }
