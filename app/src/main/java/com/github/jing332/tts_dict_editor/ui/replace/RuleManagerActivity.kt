@@ -45,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -114,6 +115,8 @@ class RuleManagerActivity : ComponentActivity() {
             AppTheme {
                 Widgets.TransparentSystemBars()
 
+                val coroutineScope = rememberCoroutineScope()
+
                 /* 错误对话框 */
                 if (errDialog != null)
                     ErrorDialog(
@@ -125,12 +128,13 @@ class RuleManagerActivity : ComponentActivity() {
                 /* 编辑规则 */
                 val launcherForEditRuleActivity =
                     rememberLauncherForActivityResult(AppActivityResultContracts.EditReplaceRule()) {
-                        it?.let { rule -> vm.updateOrAddRule(rule) }
+                        it?.let { rule ->
+                            coroutineScope.launch { vm.updateOrAddRule(rule) }
+                        }
                     }
 
                 fun launchEditRule(rule: ReplaceRule): Unit {
-                    val groups = vm.groupWithRules.map { it.group }
-                    launcherForEditRuleActivity.launch(groups to rule)
+                    launcherForEditRuleActivity.launch(vm.groups() to rule)
                 }
 
                 /* 编辑分组对话框 */
@@ -260,7 +264,8 @@ class RuleManagerActivity : ComponentActivity() {
                         Surface(modifier = Modifier.padding(pad)) {
                             Screen(
                                 onEditGroup = { groupInfoEdit = it },
-                                onEditRule = { launchEditRule(it) }
+                                onEditRule = { launchEditRule(it) },
+                                onDeleteRule = { coroutineScope.launch { vm.deleteRule(it) } },
                             )
                         }
                     })
@@ -295,45 +300,46 @@ class RuleManagerActivity : ComponentActivity() {
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun Screen(onEditGroup: (ReplaceRuleGroup) -> Unit, onEditRule: (ReplaceRule) -> Unit) {
-        val groups = vm.groupWithRules
-
-        // Keys
-        val expandedGroups =
-            remember { mutableStateListOf(*groups.map { it.group.id }.toTypedArray()) }
+    private fun Screen(
+        onEditGroup: (ReplaceRuleGroup) -> Unit,
+        onEditRule: (ReplaceRule) -> Unit, onDeleteRule: (ReplaceRule) -> Unit,
+    ) {
+        val list = vm.list
+        val expandedGroups = remember {
+            mutableStateListOf(*list.filterIsInstance<ReplaceRuleGroup>().toTypedArray())
+        }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            for ((index, groupWithRule) in groups.withIndex()) {
-                stickyHeader(key = "group_${groupWithRule.group.id}") {
-                    GroupItem(
-                        name = groupWithRule.group.name,
-                        isExpanded = expandedGroups.contains(groupWithRule.group.id),
-                        onClick = {
-                            if (expandedGroups.contains(groupWithRule.group.id))
-                                expandedGroups.remove(groupWithRule.group.id)
-                            else
-                                expandedGroups.add(groupWithRule.group.id)
-                        },
-                        onEdit = {
-                            onEditGroup.invoke(groupWithRule.group)
-                        },
-                        onDeleteAction = {
-                            vm.deleteGroup(groupWithRule.group)
-                        }
-                    )
-                }
-
-                groupWithRule.list.forEach { replaceRule ->
-                    item(key = "${replaceRule.groupId}_${replaceRule.id}") {
-                        if (expandedGroups.contains(groupWithRule.group.id))
-                            ReplaceRuleItem(
-                                replaceRule.name.ifBlank { "${replaceRule.pattern} -> ${replaceRule.replacement}" },
-                                modifier = Modifier.animateItemPlacement(),
-                                onDelete = { vm.deleteRule(replaceRule) },
-                                onClick = { onEditRule.invoke(replaceRule) }
+            list.forEachIndexed { index, item ->
+                when (item) {
+                    is ReplaceRuleGroup -> {
+                        stickyHeader(key = "group_${item.id}") {
+                            GroupItem(
+                                name = item.name,
+                                isExpanded = expandedGroups.indexOfFirst { it.id == item.id } > -1,
+                                onClick = {
+                                    if (expandedGroups.indexOfFirst { it.id == item.id } > -1)
+                                        expandedGroups.remove(item)
+                                    else
+                                        expandedGroups.add(item)
+                                },
+                                onEdit = { onEditGroup.invoke(item) },
+                                onDeleteAction = { vm.deleteGroup(item) }
                             )
+                        }
+                    }
+
+                    is ReplaceRule -> {
+                        item(key = "${item.groupId}_${item.id}") {
+                            if (expandedGroups.indexOfFirst { it.id == item.groupId } > -1)
+                                ReplaceRuleItem(
+                                    item.name.ifBlank { "${item.pattern} -> ${item.replacement}" },
+                                    modifier = Modifier.animateItemPlacement(),
+                                    onDelete = { onDeleteRule.invoke(item) },
+                                    onClick = { onEditRule.invoke(item) }
+                                )
+                        }
                     }
                 }
-
             }
         }
     }
