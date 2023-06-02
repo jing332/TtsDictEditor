@@ -46,7 +46,11 @@ fun DropMenuTextField(
             label = label,
             readOnly = true,
             enabled = false,
-            colors = TextFieldDefaults.colors(disabledContainerColor = MaterialTheme.colorScheme.surface),
+            colors = TextFieldDefaults.colors(
+                disabledContainerColor = MaterialTheme.colorScheme.surface,
+                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(0.38f),
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(

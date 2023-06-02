@@ -1,10 +1,7 @@
 package com.github.jing332.tts_dict_editor.ui.replace
 
 import android.util.Log
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -16,7 +13,6 @@ import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -95,9 +91,9 @@ class RuleManagerViewModel : ViewModel() {
                 else list.add(rule)
             }
         } else { // Add
-            val idx = list.indexOfFirst { it is ReplaceRuleGroup && it.id == rule.groupId }
-            if (idx > -1) { // 加到组的后面
-                list.add(idx + 1, rule)
+            val gIdx = list.indexOfFirst { it is ReplaceRuleGroup && it.id == rule.groupId }
+            if (gIdx > -1) { // 加到组的后面
+                list.add(gIdx + 1, rule)
                 return
             }
         }

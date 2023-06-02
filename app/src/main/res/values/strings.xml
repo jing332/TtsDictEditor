@@ -33,4 +33,8 @@
     <string name="edit">编辑</string>
     <string name="belonging_group">所属分组</string>
     <string name="default_group">默认分组</string>
+    <string name="edit_replace_rule">编辑替换规则</string>
+    <string name="test_text">测试文本</string>
+    <string name="result_null">空</string>
+    <string name="label_result">结果：</string>
 </resources>

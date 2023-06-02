@@ -5,7 +5,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
-import java.util.ArrayList
 
 class RuleEditViewModel : ViewModel() {
     var nameState = mutableStateOf("")
@@ -67,6 +66,13 @@ class RuleEditViewModel : ViewModel() {
             replacement = replacementState.value,
             isRegex = isRegexState.value
         )
+    }
+
+    fun doReplace(text: String): String {
+        return if (isRegexState.value)
+            Regex(patternState.value).replace(text, replacementState.value)
+        else
+            text.replace(patternState.value, replacementState.value)
     }
 
 

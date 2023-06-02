@@ -84,6 +84,7 @@
 
         <activity
             android:name=".ui.replace.edit.RuleEditActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true" />
     </application>
 

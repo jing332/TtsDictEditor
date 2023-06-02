@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.os.Environment
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -36,9 +35,8 @@ import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.const.IntentKeys
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
 import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
-import com.github.jing332.tts_dict_editor.ui.Widgets
+import com.github.jing332.tts_dict_editor.ui.widget.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
-import com.github.jing332.tts_dict_editor.utils.FileUriTools
 import com.github.jing332.tts_dict_editor.utils.FileUriTools.toContentUri
 import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
 
