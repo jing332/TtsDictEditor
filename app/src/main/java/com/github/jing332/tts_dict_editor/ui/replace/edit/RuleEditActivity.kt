@@ -28,6 +28,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -37,10 +41,16 @@ import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.const.IntentKeys
 import com.github.jing332.tts_dict_editor.ui.Widgets
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
+import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
+import com.github.jing332.tts_dict_editor.ui.widget.DropMenuTextField
 
 @Suppress("DEPRECATION")
 class RuleEditActivity : ComponentActivity() {
+    companion object {
+        const val KEY_GROUPS = "groups"
+    }
+
     private val vm: RuleEditViewModel by viewModels()
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +59,10 @@ class RuleEditActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         val rule = intent.getParcelableExtra<ReplaceRule>(IntentKeys.KEY_DATA)
-        vm.init(rule)
+
+        val groups =
+            intent.getParcelableArrayExtra(KEY_GROUPS)?.map { it as ReplaceRuleGroup }
+        vm.init(rule, groups ?: listOf(ReplaceRuleGroup(getString(R.string.default_group))))
 
         setContent {
             AppTheme {
@@ -86,7 +99,12 @@ class RuleEditActivity : ComponentActivity() {
                     },
                     content = { pad ->
                         Surface(modifier = Modifier.padding(pad)) {
-                            screen(
+                            Screen(
+                                group = vm.groupKeyState.value,
+                                groupKeys = vm.groupsState,
+                                groupValues = vm.groupsState.map { it.name },
+                                onGroupChange = vm::setGroup,
+
                                 vm.nameState.value, vm::setName,
                                 vm.patternState.value, vm::setPattern,
                                 vm.replacementState.value, vm::setReplacement,
@@ -101,11 +119,20 @@ class RuleEditActivity : ComponentActivity() {
     }
 
     @Composable
-    fun screen(
-        nameValue: String, onNameValueChange: (String) -> Unit,
-        patternValue: String, onReplaceValueChange: (String) -> Unit,
-        replacementValue: String, onReplacementValueChange: (String) -> Unit,
-        isRegex: Boolean, onIsRegexChange: (Boolean) -> Unit,
+    fun Screen(
+        group: ReplaceRuleGroup,
+        groupKeys: List<ReplaceRuleGroup>,
+        groupValues: List<String>,
+        onGroupChange: (ReplaceRuleGroup) -> Unit,
+
+        nameValue: String,
+        onNameValueChange: (String) -> Unit,
+        patternValue: String,
+        onReplaceValueChange: (String) -> Unit,
+        replacementValue: String,
+        onReplacementValueChange: (String) -> Unit,
+        isRegex: Boolean,
+        onIsRegexChange: (Boolean) -> Unit,
     ) {
         Column(
             modifier = Modifier
@@ -113,6 +140,17 @@ class RuleEditActivity : ComponentActivity() {
                 .padding(horizontal = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            var groupName by remember { mutableStateOf("") }
+            var groupExpanded by remember { mutableStateOf(false) }
+
+            DropMenuTextField(
+                label = { Text(text = stringResource(R.string.belonging_group)) },
+                key = group,
+                keys = groupKeys,
+                values = groupValues,
+                onKeyChange = { onGroupChange.invoke(it as ReplaceRuleGroup) }
+            )
+
             OutlinedTextField(
                 label = { Text(stringResource(R.string.name)) },
                 value = nameValue,

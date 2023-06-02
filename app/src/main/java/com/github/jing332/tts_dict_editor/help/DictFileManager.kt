@@ -52,6 +52,8 @@ class DictFileManager() {
                 val jStr = jsonBuilder.encodeToString(
                     it.copy(pattern = "", replacement = "", isRegex = false)
                 )
+                if(it.pattern.isBlank() && it.replacement.isBlank()) return@forEach
+
                 sb.appendLine("# $jStr")
                 val line = if (it.isRegex)
                     "$REGEXP_START_LABEL${it.pattern}$REGEXP_END_LABEL${it.replacement}"

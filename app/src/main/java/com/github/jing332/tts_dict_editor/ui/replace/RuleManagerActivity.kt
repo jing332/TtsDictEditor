@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -19,15 +20,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Input
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Output
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -46,16 +53,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
+import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
 import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
 import com.github.jing332.tts_dict_editor.ui.ErrorDialog
 import com.github.jing332.tts_dict_editor.ui.Widgets
-import com.github.jing332.tts_dict_editor.ui.replace.edit.RuleEditActivity
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
+import com.github.jing332.tts_dict_editor.utils.observeNoSticky
 import com.github.jing332.tts_server_android.util.longToast
 import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
 import kotlinx.coroutines.launch
@@ -86,12 +95,62 @@ class RuleManagerActivity : ComponentActivity() {
         var titleState by mutableStateOf("")
         var subTitleState by mutableStateOf("")
         var isVisibleImportConfig by mutableStateOf(false)
+        var errDialog by mutableStateOf<Pair<String, Throwable?>?>(null)
+
+        vm.saveTxtLiveData.observeNoSticky(this) {
+            synchronized(vm.saveTxtLiveData) {
+                it?.let { txt -> /* 同步到 dict.txt */
+                    kotlin.runCatching {
+                        contentResolver.openOutputStream(uri, "wt"/* 覆写 */)
+                            ?.use { os -> os.write(txt.toByteArray()) }
+                    }.onFailure { t ->
+                        errDialog = "保存文件错误" to t
+                    }
+                }
+            }
+        }
 
         setContent {
             AppTheme {
                 Widgets.TransparentSystemBars()
+
+                /* 错误对话框 */
+                if (errDialog != null)
+                    ErrorDialog(
+                        title = errDialog?.first ?: "Error",
+                        t = errDialog?.second,
+                        onDismiss = { errDialog = null }
+                    )
+
+                /* 编辑规则 */
+                val launcherForEditRuleActivity =
+                    rememberLauncherForActivityResult(AppActivityResultContracts.EditReplaceRule()) {
+                        it?.let { rule -> vm.updateOrAddRule(rule) }
+                    }
+
+                fun launchEditRule(rule: ReplaceRule): Unit {
+                    val groups = vm.groupWithRules.map { it.group }
+                    launcherForEditRuleActivity.launch(groups to rule)
+                }
+
+                /* 编辑分组对话框 */
+                var groupInfoEdit by remember { mutableStateOf<ReplaceRuleGroup?>(null) }
+                if (groupInfoEdit != null) {
+                    var name by remember { mutableStateOf(groupInfoEdit?.name ?: "") }
+                    GroupInfoEditDialog(
+                        name = name,
+                        onConfirm = {
+                            vm.updateGroup(groupInfoEdit!!.copy(name = name))
+                            groupInfoEdit = null
+                        },
+                        onNameChange = { name = it },
+                        onDismissRequest = { groupInfoEdit = null }
+                    )
+                }
+
                 Scaffold(
                     topBar = {
+                        var isVisibleAddMenu by remember { mutableStateOf(false) }
                         TopAppBar(
                             modifier = Modifier.fillMaxWidth(),
                             title = {
@@ -116,9 +175,42 @@ class RuleManagerActivity : ComponentActivity() {
                             ),
                             actions = {
                                 IconButton(onClick = {
-                                    mEditActivityLauncher.launch(ReplaceRule())
+                                    isVisibleAddMenu = true
                                 }) {
                                     Icon(Icons.Filled.Add, stringResource(id = R.string.add))
+                                    CascadeDropdownMenu(
+                                        expanded = isVisibleAddMenu,
+                                        onDismissRequest = { isVisibleAddMenu = false }) {
+                                        androidx.compose.material3.DropdownMenuItem(
+                                            text = { Text(stringResource(id = R.string.add_rule)) },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Filled.Add, "",
+                                                    tint = MaterialTheme.colorScheme.onBackground
+                                                )
+                                            },
+                                            onClick = {
+                                                launchEditRule(ReplaceRule())
+                                                isVisibleAddMenu = false
+                                            }
+                                        )
+
+                                        androidx.compose.material3.DropdownMenuItem(
+                                            text = { Text(stringResource(id = R.string.add_group)) },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Filled.Group,
+                                                    "",
+                                                    tint = MaterialTheme.colorScheme.onBackground
+                                                )
+                                            },
+                                            onClick = {
+                                                groupInfoEdit =
+                                                    ReplaceRuleGroup(id = System.currentTimeMillis())
+                                                isVisibleAddMenu = false
+                                            }
+                                        )
+                                    }
                                 }
 
                                 var isMoreOptionsVisible by remember {
@@ -159,9 +251,6 @@ class RuleManagerActivity : ComponentActivity() {
                                             },
                                             onClick = { /*TODO*/ }
                                         )
-
-//                                        DropdownMenuItem(text = { /*TODO*/ }, children =)
-
                                     }
                                 }
                             }
@@ -169,19 +258,10 @@ class RuleManagerActivity : ComponentActivity() {
                     },
                     content = { pad ->
                         Surface(modifier = Modifier.padding(pad)) {
-                            Screen()
-
-                            vm.saveTxtState?.let { txt -> /* 同步到 dict.txt */
-                                kotlin.runCatching {
-                                    LocalContext.current.contentResolver.openOutputStream(uri)
-                                        ?.use {
-                                            it.write(txt.toByteArray())
-                                            vm.saveTxtState = null
-                                        }
-                                }.onFailure {
-                                    ErrorDialog(title = "保存文件错误", t = it)
-                                }
-                            }
+                            Screen(
+                                onEditGroup = { groupInfoEdit = it },
+                                onEditRule = { launchEditRule(it) }
+                            )
                         }
                     })
 
@@ -204,17 +284,6 @@ class RuleManagerActivity : ComponentActivity() {
         }
     }
 
-    private val mEditActivityLauncher =
-        registerForActivityResult(
-            AppActivityResultContracts.parcelableDataActivity<ReplaceRule>(
-                RuleEditActivity::class.java
-            )
-        ) {
-            it?.let { rule ->
-                vm.updateOrAddRule(rule)
-            }
-        }
-
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun ImportConfigDialog(onDismiss: () -> Unit) {
@@ -226,7 +295,7 @@ class RuleManagerActivity : ComponentActivity() {
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun Screen() {
+    private fun Screen(onEditGroup: (ReplaceRuleGroup) -> Unit, onEditRule: (ReplaceRule) -> Unit) {
         val groups = vm.groupWithRules
 
         // Keys
@@ -234,7 +303,7 @@ class RuleManagerActivity : ComponentActivity() {
             remember { mutableStateListOf(*groups.map { it.group.id }.toTypedArray()) }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             for ((index, groupWithRule) in groups.withIndex()) {
-                stickyHeader(key = "group_${index}_${groupWithRule.group.id}") {
+                stickyHeader(key = "group_${groupWithRule.group.id}") {
                     GroupItem(
                         name = groupWithRule.group.name,
                         isExpanded = expandedGroups.contains(groupWithRule.group.id),
@@ -244,24 +313,23 @@ class RuleManagerActivity : ComponentActivity() {
                             else
                                 expandedGroups.add(groupWithRule.group.id)
                         },
-                        onDelete = {
-//                            vm.deleteRule()
+                        onEdit = {
+                            onEditGroup.invoke(groupWithRule.group)
+                        },
+                        onDeleteAction = {
+                            vm.deleteGroup(groupWithRule.group)
                         }
                     )
                 }
 
                 groupWithRule.list.forEach { replaceRule ->
-                    item(key = "${index}_${replaceRule.id}") {
+                    item(key = "${replaceRule.groupId}_${replaceRule.id}") {
                         if (expandedGroups.contains(groupWithRule.group.id))
                             ReplaceRuleItem(
                                 replaceRule.name.ifBlank { "${replaceRule.pattern} -> ${replaceRule.replacement}" },
                                 modifier = Modifier.animateItemPlacement(),
-                                onDelete = {
-                                    vm.deleteRule(replaceRule)
-                                },
-                                onClick = {
-                                    mEditActivityLauncher.launch(replaceRule)
-                                }
+                                onDelete = { vm.deleteRule(replaceRule) },
+                                onClick = { onEditRule.invoke(replaceRule) }
                             )
                     }
                 }
@@ -271,7 +339,13 @@ class RuleManagerActivity : ComponentActivity() {
     }
 
     @Composable
-    fun GroupItem(name: String, isExpanded: Boolean, onClick: () -> Unit, onDelete: () -> Unit) {
+    fun GroupItem(
+        name: String,
+        isExpanded: Boolean,
+        onClick: () -> Unit,
+        onEdit: () -> Unit,
+        onDeleteAction: () -> Unit
+    ) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -307,9 +381,22 @@ class RuleManagerActivity : ComponentActivity() {
                 CascadeDropdownMenu(state = menuState,
                     expanded = isMoreOptionsVisible,
                     onDismissRequest = { isMoreOptionsVisible = false }) {
+                    androidx.compose.material3.DropdownMenuItem(
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Edit, "",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        },
+                        text = { Text(stringResource(R.string.edit)) },
+                        onClick = {
+                            onEdit.invoke()
+                            isMoreOptionsVisible = false
+                        }
+                    )
 
                     DropdownMenuItem(text = { Text(stringResource(R.string.delete)) },
-                        trailingIcon = {
+                        leadingIcon = {
                             Icon(
                                 Icons.Filled.Delete,
                                 stringResource(R.string.delete),
@@ -324,7 +411,7 @@ class RuleManagerActivity : ComponentActivity() {
                                     fontWeight = FontWeight.Bold
                                 )
                             }, onClick = {
-                                onDelete.invoke()
+                                onDeleteAction.invoke()
                                 isMoreOptionsVisible = false
                             })
                             androidx.compose.material3.DropdownMenuItem(text = {
@@ -340,6 +427,7 @@ class RuleManagerActivity : ComponentActivity() {
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun ReplaceRuleItem(
         name: String,
@@ -347,64 +435,110 @@ class RuleManagerActivity : ComponentActivity() {
         onClick: () -> Unit,
         onDelete: () -> Unit
     ) {
-        Row(modifier = modifier
-            .fillMaxSize()
-            .clickable { onClick.invoke() }) {
-            Text(
-                name,
-                maxLines = 1,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .align(Alignment.CenterVertically),
-            )
-
-            var isMoreOptionsVisible by remember { mutableStateOf(false) }
-            IconButton(onClick = {
-                isMoreOptionsVisible = true
-            }, modifier = Modifier.padding(end = 10.dp)) {
-                Icon(
-                    imageVector = Icons.Filled.MoreVert,
-                    contentDescription = stringResource(id = R.string.more_options),
-                    tint = MaterialTheme.colorScheme.onBackground
+        Card(
+            onClick = onClick,
+            colors = CardDefaults.elevatedCardColors(),
+            elevation = CardDefaults.elevatedCardElevation(),
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+        ) {
+            Row(modifier = modifier.fillMaxSize()) {
+                Text(
+                    name,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 4.dp)
+                        .fillMaxWidth()
+                        .align(Alignment.CenterVertically),
                 )
 
-                val menuState = rememberCascadeState()
-                CascadeDropdownMenu(state = menuState,
-                    expanded = isMoreOptionsVisible,
-                    onDismissRequest = { isMoreOptionsVisible = false }) {
+                var isMoreOptionsVisible by remember { mutableStateOf(false) }
+                IconButton(onClick = {
+                    isMoreOptionsVisible = true
+                }, modifier = Modifier.padding(end = 10.dp)) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = stringResource(id = R.string.more_options),
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
 
-                    DropdownMenuItem(text = { Text(stringResource(R.string.delete)) },
-                        trailingIcon = {
-                            Icon(
-                                Icons.Filled.Delete,
-                                stringResource(R.string.delete),
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        },
-                        children = {
-                            androidx.compose.material3.DropdownMenuItem(text = {
-                                Text(
-                                    stringResource(R.string.confirm_deletion),
-                                    color = MaterialTheme.colorScheme.error,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }, onClick = {
-                                onDelete.invoke()
-                                isMoreOptionsVisible = false
-                            })
-                            androidx.compose.material3.DropdownMenuItem(text = {
-                                Text(
-                                    stringResource(R.string.cancel)
+                    val menuState = rememberCascadeState()
+                    CascadeDropdownMenu(state = menuState,
+                        expanded = isMoreOptionsVisible,
+                        onDismissRequest = { isMoreOptionsVisible = false }) {
+
+                        DropdownMenuItem(text = { Text(stringResource(R.string.delete)) },
+                            trailingIcon = {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    stringResource(R.string.delete),
+                                    tint = MaterialTheme.colorScheme.error
                                 )
                             },
-                                onClick = { menuState.navigateBack() })
-                        })
+                            children = {
+                                androidx.compose.material3.DropdownMenuItem(text = {
+                                    Text(
+                                        stringResource(R.string.confirm_deletion),
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }, onClick = {
+                                    onDelete.invoke()
+                                    isMoreOptionsVisible = false
+                                })
+                                androidx.compose.material3.DropdownMenuItem(text = {
+                                    Text(
+                                        stringResource(R.string.cancel)
+                                    )
+                                },
+                                    onClick = { menuState.navigateBack() })
+                            })
+                    }
                 }
             }
         }
 
     }
 
-
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GroupInfoEditDialog(
+    name: String,
+    onNameChange: (String) -> Unit,
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(title = { Text(stringResource(R.string.edit_group)) },
+        onDismissRequest = onDismissRequest,
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text(stringResource(R.string.confirm))
+            }
+        },
+        text = {
+            Column(
+                Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.group_name)) },
+                    value = name,
+                    onValueChange = onNameChange,
+                )
+            }
+        })
+}
+
+
+@Preview
+@Composable
+fun PreviewDialog() {
+    var name by remember { mutableStateOf("123") }
+    GroupInfoEditDialog(name, { name = it }, {}, {})
+}
+

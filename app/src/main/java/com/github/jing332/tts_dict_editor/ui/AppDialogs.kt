@@ -27,7 +27,7 @@ import com.github.jing332.tts_dict_editor.R
 @Composable
 fun ErrorDialog(
     t: Throwable? = null,
-    title: String = stringResource(id = R.string.error),
+    title: String = stringResource(R.string.error),
     message: String = t?.localizedMessage ?: "",
     onDismiss: () -> Unit = {}
 ) {

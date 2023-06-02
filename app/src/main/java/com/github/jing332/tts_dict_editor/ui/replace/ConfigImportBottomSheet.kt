@@ -43,11 +43,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.drake.net.Net
 import com.drake.net.exception.NetException
+import com.drake.net.okhttp.trustSSLCertificate
+import com.drake.net.utils.withIO
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.app
 import com.github.jing332.tts_dict_editor.ui.ErrorDialog
 import com.github.jing332.tts_dict_editor.utils.FileUtils.readAllText
 import com.github.jing332.tts_server_android.util.longToast
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.Response
 import splitties.systemservices.clipboardManager
@@ -141,6 +144,8 @@ fun ConfigImportBottomSheet(
             }
 
             val context = LocalContext.current
+
+
             var errorDialog by remember { mutableStateOf<Throwable?>(null) }
             errorDialog?.let {
                 ErrorDialog(it) {
@@ -153,10 +158,12 @@ fun ConfigImportBottomSheet(
                     .align(Alignment.CenterHorizontally)
                     .padding(vertical = 16.dp),
                 onClick = {
-                    kotlin.runCatching {
-                        onImportFromJson(getJson(selectedIndex, context, url, filePath))
-                    }.onFailure {
-                        errorDialog = it
+                    coroutine.launch(Dispatchers.Main) {
+                        kotlin.runCatching {
+                            onImportFromJson(getJson(selectedIndex, context, url, filePath))
+                        }.onFailure {
+                            errorDialog = it
+                        }
                     }
                 }) {
                 Text(stringResource(id = R.string.import_config))
@@ -165,24 +172,30 @@ fun ConfigImportBottomSheet(
     }
 }
 
-private fun getJson(
+private suspend fun getJson(
     selectedIndex: Int,
     context: Context,
     url: String? = null,
     uri: String? = null
 ): String {
-    return if (selectedIndex == 2) {
-        val resp: Response = Net.get(url!!).execute()
-        if (resp.isSuccessful) {
-            resp.body?.string() ?: ""
-        } else throw NetException(resp.request, "GET失败, 状态码: ${resp.code}")
-    } else if (selectedIndex == 1) {
-        Uri.parse(uri).readAllText(context)
-    } else {
-        clipboardManager.text.toString() ?: ""
+    return when (selectedIndex) {
+        2 -> {
+            withIO {
+                val resp: Response =
+                    Net.get(url!!) { setClient { trustSSLCertificate() } }.execute()
+                if (resp.isSuccessful) {
+                    resp.body?.string() ?: ""
+                } else throw NetException(resp.request, "GET失败, 状态码: ${resp.code}")
+            }
+        }
+        1 -> {
+            withIO { Uri.parse(uri).readAllText(context) }
+        }
+        else -> {
+            clipboardManager.text.toString() ?: ""
+        }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
