@@ -8,61 +8,61 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
-  resourcePrefix "cascade_"
-  namespace "me.saket.cascade"
+    resourcePrefix "cascade_"
+    namespace "me.saket.cascade"
 
-  compileSdk compileSdk_version
-  defaultConfig {
-    minSdkVersion 23
-    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-  }
-
-  buildFeatures {
-    compose = true
-  }
-  composeOptions {
-    kotlinCompilerExtensionVersion = compose_compiler_version
-  }
-  kotlinOptions {
-    jvmTarget = "1.8"
-  }
-  lintOptions {
-    abortOnError true
-  }
-  testOptions {
-    animationsDisabled = true
-
-    // FYI dropbox/shots does not support gradle managed devices yet. As a workaround,
-    // the golden values of all instrumented screenshot tests in this project are run
-    // using connectedAndroidCheck on an emulator with the same specs.
-    managedDevices {
-      devices {
-        pixel5Api33 (ManagedVirtualDevice) {
-          device = "Pixel 5"
-          apiLevel = 31
-          systemImageSource = "aosp"
-        }
-      }
+    compileSdk compileSdk_version
+    defaultConfig {
+        minSdk 21
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-  }
+
+    buildFeatures {
+        compose = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = compose_compiler_version
+    }
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+    lintOptions {
+        abortOnError true
+    }
+    testOptions {
+        animationsDisabled = true
+
+        // FYI dropbox/shots does not support gradle managed devices yet. As a workaround,
+        // the golden values of all instrumented screenshot tests in this project are run
+        // using connectedAndroidCheck on an emulator with the same specs.
+        managedDevices {
+            devices {
+                pixel5Api33(ManagedVirtualDevice) {
+                    device = "Pixel 5"
+                    apiLevel = 31
+                    systemImageSource = "aosp"
+                }
+            }
+        }
+    }
 }
 
 dependencies {
-  implementation "androidx.activity:activity-compose:1.7.2"
-  implementation "androidx.compose.ui:ui:$compose_version"
-  implementation "androidx.compose.ui:ui-tooling:$compose_version"
-  implementation "androidx.compose.foundation:foundation:$compose_version"
-  implementation "androidx.compose.material3:material3:1.1.0"
-  implementation "androidx.compose.material:material-icons-extended:$compose_version"
+    implementation "androidx.activity:activity-compose:1.7.2"
+    implementation "androidx.compose.ui:ui:$compose_version"
+    implementation "androidx.compose.ui:ui-tooling:$compose_version"
+    implementation "androidx.compose.foundation:foundation:$compose_version"
+    implementation "androidx.compose.material3:material3:1.1.0"
+    implementation "androidx.compose.material:material-icons-extended:$compose_version"
 
-  testImplementation "junit:junit:4.13.2"
+    testImplementation "junit:junit:4.13.2"
 //  testImplementation "com.google.testparameterinjector:test-parameter-injector:$versions.testParamInjector"
 //  testImplementation "com.google.truth:truth:1.1.3"
 
-  debugImplementation "androidx.appcompat:appcompat:1.6.1"
-  androidTestImplementation "androidx.test:core-ktx:1.5.0"
-  androidTestImplementation "androidx.test:rules:1.5.0"
-  androidTestImplementation "androidx.test.ext:junit-ktx:1.1.5"
-  androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
+    debugImplementation "androidx.appcompat:appcompat:1.6.1"
+    androidTestImplementation "androidx.test:core-ktx:1.5.0"
+    androidTestImplementation "androidx.test:rules:1.5.0"
+    androidTestImplementation "androidx.test.ext:junit-ktx:1.1.5"
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
 //  androidTestImplementation "com.google.testparameterinjector:test-parameter-injector:$versions.testParamInjector"
 }
