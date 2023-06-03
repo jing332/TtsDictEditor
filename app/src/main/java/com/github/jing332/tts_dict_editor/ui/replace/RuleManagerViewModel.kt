@@ -171,4 +171,9 @@ class RuleManagerViewModel : ViewModel() {
         return AppConst.json.encodeToString(gwrs)
     }
 
+    suspend fun exportGroup(group: ReplaceRuleGroup):String {
+        val gwrs = groupWithRules().filter { it.group.id == group.id }
+        return AppConst.json.encodeToString(gwrs)
+    }
+
 }

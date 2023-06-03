@@ -18,8 +18,8 @@
     <string name="title_activity_rule_manager">RuleManagerActivity</string>
     <string name="file_path">文件路径</string>
     <string name="replace_rule_manager">替换规则管理</string>
-    <string name="import_config">导入</string>
-    <string name="export_config">导出</string>
+    <string name="config_import">导入</string>
+    <string name="config_export">导出</string>
     <string name="clipboard">剪贴板</string>
     <string name="file">文件</string>
     <string name="url">网络链接</string>
@@ -40,4 +40,7 @@
     <string name="failed_to_import">导入失败</string>
     <string name="import_success_msg">成功导入 %1$d 条规则</string>
     <string name="copied_to_clipboard">已复制到剪贴板</string>
+    <string name="copy">复制</string>
+    <string name="save_as_file">保存为文件</string>
+    <string name="saved_to_file">已保存到文件：%1$s</string>
 </resources>

@@ -103,9 +103,17 @@ fun ConfigImportBottomSheet(
     ) {
         var url by remember { mutableStateOf("") }
         Column(Modifier.padding(horizontal = 8.dp)) {
+            Text(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(bottom = 8.dp),
+                text = stringResource(id = R.string.config_import),
+                style = MaterialTheme.typography.displaySmall
+            )
             val buttons = listOf(
                 stringResource(R.string.clipboard),
-                stringResource(R.string.file), stringResource(R.string.url)
+                stringResource(R.string.file),
+                stringResource(R.string.url)
             )
             var selectedIndex by remember { mutableIntStateOf(0) }
 
@@ -164,8 +172,6 @@ fun ConfigImportBottomSheet(
             }
 
             val context = LocalContext.current
-
-
             var errorDialog by remember { mutableStateOf<Throwable?>(null) }
             errorDialog?.let {
                 ErrorDialog(it) {
@@ -188,7 +194,7 @@ fun ConfigImportBottomSheet(
                         isVisibleLoadingDialog = false
                     }
                 }) {
-                Text(stringResource(id = R.string.import_config))
+                Text(stringResource(id = R.string.config_import))
             }
         }
     }
