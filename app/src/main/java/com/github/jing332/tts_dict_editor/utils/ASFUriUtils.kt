@@ -1,4 +1,4 @@
-package com.github.jing332.tts_server_android.utils
+package com.github.jing332.tts_dict_editor.utils
 
 import android.content.ContentUris
 import android.content.Context

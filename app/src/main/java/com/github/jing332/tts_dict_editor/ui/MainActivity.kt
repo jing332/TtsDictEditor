@@ -55,7 +55,7 @@ import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditActivity
 import com.github.jing332.tts_dict_editor.ui.replace.RuleManagerActivity
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_server_android.util.longToast
-import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
+import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
 

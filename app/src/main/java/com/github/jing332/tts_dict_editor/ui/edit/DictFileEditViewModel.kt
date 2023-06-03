@@ -20,7 +20,7 @@ class DictFileEditViewModel : ViewModel() {
         _nameState.value = text
     }
 
-    fun updateFilePath(path: String) {
+    fun updateFileUri(path: String) {
         _filePathState.value = path
     }
 

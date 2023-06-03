@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -25,7 +26,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -34,11 +39,10 @@ import androidx.core.view.WindowCompat
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.const.IntentKeys
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
-import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
 import com.github.jing332.tts_dict_editor.ui.widget.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
-import com.github.jing332.tts_dict_editor.utils.FileUriTools.toContentUri
-import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
+import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
+import me.saket.cascade.CascadeDropdownMenu
 
 @Suppress("DEPRECATION")
 class DictFileEditActivity : ComponentActivity() {
@@ -56,10 +60,11 @@ class DictFileEditActivity : ComponentActivity() {
             AppTheme {
                 Widgets.TransparentSystemBars()
                 Scaffold(
+                    modifier = Modifier.imePadding(),
                     topBar = {
                         TopAppBar(
                             modifier = Modifier.fillMaxWidth(),
-                            title = { Text(text = "编辑词典文件") },
+                            title = { Text(text = stringResource(R.string.set_dict_file)) },
                             colors = TopAppBarDefaults.topAppBarColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                                 titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -89,19 +94,12 @@ class DictFileEditActivity : ComponentActivity() {
                                         stringResource(id = R.string.save)
                                     )
                                 }
-
-                                /*IconButton(onClick = {}) {
-                                    Icon(
-                                        Icons.Filled.MoreVert,
-                                        stringResource(id = R.string.more_options)
-                                    )
-                                }*/
                             }
                         )
                     },
                     content = { pad ->
                         Surface(modifier = Modifier.padding(pad)) {
-                            screen()
+                            Screen()
                         }
                     }
                 )
@@ -109,30 +107,31 @@ class DictFileEditActivity : ComponentActivity() {
         }
     }
 
-    private val filepicker = registerForActivityResult(AppActivityResultContracts.OpenDocument()) {
-        it?.let { uri ->
-            contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-
-            vm.updateFilePath(uri.toString())
-        }
-    }
-
-    private fun launchPicker() {
-        filepicker.launch(
-            arrayOf(
-                "${Environment.getExternalStorageDirectory().absolutePath}/Android/data".toContentUri(
-                    false
-                ).toString(),
-                "text/*"
-            )
-        )
-    }
-
     @Composable
-    private fun screen() {
+    private fun Screen() {
+        var filePickerUri by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
+        val context = LocalContext.current
+        if (filePickerUri != null) {
+            val uriStr = filePickerUri?.second ?: ""
+            val isA13Mode = filePickerUri?.first ?: false
+            FilePathPicker(
+                uriString = uriStr,
+                isA13Mode = isA13Mode,
+                mimeTypes = listOf("text/*"),
+                onResult = {
+                    filePickerUri = null
+                    it?.let { uri ->
+                        context.contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                        )
+                        vm.updateFileUri(uri.toString())
+                    }
+                }
+            )
+        }
+
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -158,25 +157,52 @@ class DictFileEditActivity : ComponentActivity() {
                     null
                 } ?: path,
                 label = { Text(stringResource(R.string.file_path)) },
-                onValueChange = {
-                    vm.updateFilePath(it)
-                },
+                onValueChange = {},
                 trailingIcon = {
+                    var isVisibleMenu by remember { mutableStateOf(false) }
                     IconButton(
-                        onClick = { launchPicker() },
+                        onClick = {
+                            isVisibleMenu = true
+                        },
                     ) {
                         Icon(
                             Icons.Filled.FileOpen,
                             contentDescription = stringResource(R.string.select_file)
                         )
+
+                        CascadeDropdownMenu(
+                            expanded = isVisibleMenu,
+                            onDismissRequest = { isVisibleMenu = false }) {
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text(Environment.getExternalStorageDirectory().absolutePath) },
+                                onClick = {
+                                    isVisibleMenu = false
+                                    filePickerUri =
+                                        false to Environment.getExternalStorageDirectory().absolutePath
+                                }
+                            )
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Android/data") },
+                                onClick = {
+                                    isVisibleMenu = false
+                                    filePickerUri =
+                                        false to Environment.getExternalStorageDirectory().absolutePath + "/Android/data"
+                                }
+                            )
+
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Android/data (安卓13)") },
+                                onClick = {
+                                    isVisibleMenu = false
+                                    filePickerUri =
+                                        true to Environment.getExternalStorageDirectory().absolutePath + "/Android/data"
+                                }
+                            )
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             )
-
         }
-
     }
-
-
 }

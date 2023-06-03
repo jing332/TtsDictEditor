@@ -55,7 +55,7 @@ import com.github.jing332.tts_dict_editor.ui.widget.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_dict_editor.utils.observeNoSticky
 import com.github.jing332.tts_server_android.util.longToast
-import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
+import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
 import com.talhafaki.composablesweettoast.util.SweetToastUtil
 import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
@@ -310,7 +310,7 @@ class RuleManagerActivity : ComponentActivity() {
             kotlin.runCatching {
                 vm.loadRulesFromDictTxt(contentResolver.openInputStream(uri)!!)
             }.onFailure {
-                longToast("加载失败: ${it.message}")
+                errDialog = getString(R.string.failed_to_load) to it
             }
         }
     }

@@ -10,6 +10,8 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
 
     <application
         android:name=".App"
@@ -19,10 +21,12 @@
         android:icon="@mipmap/ic_new_launcher"
         android:label="@string/app_name"
         android:preserveLegacyExternalStorage="true"
+
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_new_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.App"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
             android:name=".ui.replace.RuleManagerActivity"
@@ -77,7 +81,9 @@
                 <data android:pathPattern=".*\\.JSON" />-->
             </intent-filter>
         </activity>
-        <activity android:name=".ui.edit.DictFileEditActivity" />
+        <activity
+            android:name=".ui.edit.DictFileEditActivity"
+            android:exported="true" />
         <activity
             android:name=".ui.filepicker.FilePickerActivity"
             android:exported="true" />

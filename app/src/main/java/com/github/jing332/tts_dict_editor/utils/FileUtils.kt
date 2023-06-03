@@ -41,8 +41,7 @@ object FileUtils {
 
     fun exists(file: File): Boolean {
         runCatching {
-            if (file.isFile)
-                return file.exists()
+            return file.exists()
         }.onFailure {
             it.printStackTrace()
         }

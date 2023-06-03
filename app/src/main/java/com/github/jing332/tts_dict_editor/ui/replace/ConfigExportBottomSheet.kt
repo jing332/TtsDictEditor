@@ -1,9 +1,7 @@
 package com.github.jing332.tts_dict_editor.ui.replace
 
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,10 +31,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.drake.net.utils.fileName
 import com.github.jing332.tts_dict_editor.R
-import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
+import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
 import com.talhafaki.composablesweettoast.util.SweetToastUtil
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

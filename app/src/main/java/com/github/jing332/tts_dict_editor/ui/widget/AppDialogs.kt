@@ -2,6 +2,7 @@ package com.github.jing332.tts_dict_editor.ui.widget
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
@@ -19,7 +20,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.github.jing332.tts_dict_editor.R
 
 
@@ -38,13 +41,22 @@ fun ErrorDialog(
             title = { Text(title) },
             text = {
                 Column {
-                    Text(text = message)
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                     t?.stackTraceToString()?.let { traceString ->
                         val lines = traceString.lines()
                         LazyColumn(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                             item {
                                 lines.forEach {
-                                    Text(text = it)
+                                    Text(
+                                        text = it,
+                                        fontStyle = FontStyle.Italic,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
                                 }
                             }
                         }

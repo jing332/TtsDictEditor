@@ -2,9 +2,7 @@ package com.github.jing332.tts_dict_editor.ui.filepicker.adapter
 
 import android.content.Context
 import androidx.documentfile.provider.DocumentFile
-import com.github.jing332.tts_dict_editor.ui.filepicker.FileModel
-import com.github.jing332.tts_server_android.utils.ASFUriUtils
-import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
+import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
