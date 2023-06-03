@@ -79,58 +79,69 @@ class RuleManagerViewModel : ViewModel() {
      * 更新或添加规则 完毕后自动同步到 dict.txt
      */
     fun updateOrAddRule(rule: ReplaceRule, isUpdate: Boolean = true) {
-        val idx = list.indexOfFirst { it is ReplaceRule && it.id == rule.id }
-        if (idx > -1) { // Update
-            val src = list[idx] as ReplaceRule
-            if (src.groupId == rule.groupId)
-                list[idx] = rule
-            else { // 移动到其他组
-                list.removeAt(idx)
-                val gIdx = list.indexOfFirst { it is ReplaceRuleGroup && it.id == rule.groupId }
-                if (gIdx > -1) list.add(gIdx + 1, rule)
-                else list.add(rule)
-            }
-        } else { // Add
-            val gIdx = list.indexOfFirst { it is ReplaceRuleGroup && it.id == rule.groupId }
-            if (gIdx > -1) { // 加到组的后面
-                list.add(gIdx + 1, rule)
-                return
-            }
-        }
+        synchronized(this) {
 
-        if (isUpdate) requestSaveTxt()
+            val idx = list.indexOfFirst { it is ReplaceRule && it.id == rule.id }
+            if (idx > -1) { // Update
+                val src = list[idx] as ReplaceRule
+                if (src.groupId == rule.groupId)
+                    list[idx] = rule
+                else { // 移动到其他组
+                    list.removeAt(idx)
+                    val gIdx = list.indexOfFirst { it is ReplaceRuleGroup && it.id == rule.groupId }
+                    if (gIdx > -1) list.add(gIdx + 1, rule)
+                    else list.add(rule)
+                }
+            } else { // Add
+                val gIdx = list.indexOfFirst { it is ReplaceRuleGroup && it.id == rule.groupId }
+                if (gIdx > -1) { // 加到组的后面
+                    list.add(gIdx + 1, rule)
+                    return
+                }
+            }
+            if (isUpdate) requestSaveTxt()
+        }
     }
 
     /**
      * 删除规则 完毕后自动同步到 dict.txt
      */
     suspend fun deleteRule(rule: ReplaceRule, isUpdate: Boolean = true) {
-        val idx = list.indexOfFirst { it is ReplaceRule && it.id == rule.id }
-        if (idx > -1) {
-            list.removeAt(idx)
+        synchronized(this) {
+
+            val idx = list.indexOfFirst { it is ReplaceRule && it.id == rule.id }
+            if (idx > -1) {
+                list.removeAt(idx)
+            }
+            if (isUpdate) requestSaveTxt()
         }
-        if (isUpdate) requestSaveTxt()
     }
 
     fun updateOrAddGroup(group: ReplaceRuleGroup) {
-        val idx = findGroupIndex(group)
-        if (idx > -1) {
-            list[idx] = group
-        } else
-            list.add(group)
+        synchronized(this) {
 
-        // 同步到 dict.txt
-        requestSaveTxt()
+            val idx = findGroupIndex(group)
+            if (idx > -1) {
+                list[idx] = group
+            } else
+                list.add(group)
+
+            // 同步到 dict.txt
+            requestSaveTxt()
+        }
     }
 
     fun deleteGroup(group: ReplaceRuleGroup) {
-        val idx = findGroupIndex(group)
-        if (idx > -1) {
-            list.removeAt(idx)
-        }
+        synchronized(this) {
 
-        // 同步到 dict.txt
-        requestSaveTxt()
+            val idx = findGroupIndex(group)
+            if (idx > -1) {
+                list.removeAt(idx)
+            }
+
+            // 同步到 dict.txt
+            requestSaveTxt()
+        }
     }
 
     private fun findGroupIndex(group: ReplaceRuleGroup): Int =

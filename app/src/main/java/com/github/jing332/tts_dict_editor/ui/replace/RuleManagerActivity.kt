@@ -27,8 +27,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Output
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,7 +48,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -70,7 +67,6 @@ import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_dict_editor.utils.observeNoSticky
 import com.github.jing332.tts_server_android.util.longToast
 import com.github.jing332.tts_server_android.utils.ASFUriUtils.getPath
-import com.talhafaki.composablesweettoast.main.SweetToast
 import com.talhafaki.composablesweettoast.util.SweetToastUtil
 import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
@@ -269,6 +265,11 @@ class RuleManagerActivity : ComponentActivity() {
                     content = { pad ->
                         Surface(modifier = Modifier.padding(pad)) {
                             Screen(
+                                onEnabledChange = {
+                                    coroutineScope.launch {
+                                        vm.updateOrAddRule(it.copy(isEnabled = !it.isEnabled))
+                                    }
+                                },
                                 onEditGroup = { groupInfoEdit = it },
                                 onEditRule = { launchEditRule(it) },
                                 onDeleteRule = { coroutineScope.launch { vm.deleteRule(it) } },
@@ -332,8 +333,10 @@ class RuleManagerActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     private fun Screen(
+        onEnabledChange: (ReplaceRule) -> Unit,
         onEditGroup: (ReplaceRuleGroup) -> Unit,
-        onEditRule: (ReplaceRule) -> Unit, onDeleteRule: (ReplaceRule) -> Unit,
+        onEditRule: (ReplaceRule) -> Unit,
+        onDeleteRule: (ReplaceRule) -> Unit,
     ) {
         val list = vm.list
         val expandedGroups = remember {
@@ -366,7 +369,9 @@ class RuleManagerActivity : ComponentActivity() {
                                     item.name.ifBlank { "${item.pattern} -> ${item.replacement}" },
                                     modifier = Modifier.animateItemPlacement(),
                                     onDelete = { onDeleteRule.invoke(item) },
-                                    onClick = { onEditRule.invoke(item) }
+                                    onClick = { onEditRule.invoke(item) },
+                                    isChecked = item.isEnabled,
+                                    onCheckedChange = { onEnabledChange.invoke(item) }
                                 )
                         }
                     }
@@ -463,82 +468,6 @@ class RuleManagerActivity : ComponentActivity() {
 
         }
     }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun ReplaceRuleItem(
-        name: String,
-        modifier: Modifier,
-        onClick: () -> Unit,
-        onDelete: () -> Unit
-    ) {
-        Card(
-            onClick = onClick,
-            colors = CardDefaults.elevatedCardColors(),
-            elevation = CardDefaults.elevatedCardElevation(),
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 2.dp)
-        ) {
-            Row(modifier = modifier.fillMaxSize()) {
-                Text(
-                    name,
-                    maxLines = 1,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 4.dp)
-                        .fillMaxWidth()
-                        .align(Alignment.CenterVertically),
-                )
-
-                var isMoreOptionsVisible by remember { mutableStateOf(false) }
-                IconButton(onClick = {
-                    isMoreOptionsVisible = true
-                }, modifier = Modifier.padding(end = 10.dp)) {
-                    Icon(
-                        imageVector = Icons.Filled.MoreVert,
-                        contentDescription = stringResource(id = R.string.more_options),
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-
-                    val menuState = rememberCascadeState()
-                    CascadeDropdownMenu(state = menuState,
-                        expanded = isMoreOptionsVisible,
-                        onDismissRequest = { isMoreOptionsVisible = false }) {
-
-                        DropdownMenuItem(text = { Text(stringResource(R.string.delete)) },
-                            trailingIcon = {
-                                Icon(
-                                    Icons.Filled.Delete,
-                                    stringResource(R.string.delete),
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            },
-                            children = {
-                                androidx.compose.material3.DropdownMenuItem(text = {
-                                    Text(
-                                        stringResource(R.string.confirm_deletion),
-                                        color = MaterialTheme.colorScheme.error,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }, onClick = {
-                                    onDelete.invoke()
-                                    isMoreOptionsVisible = false
-                                })
-                                androidx.compose.material3.DropdownMenuItem(text = {
-                                    Text(
-                                        stringResource(R.string.cancel)
-                                    )
-                                },
-                                    onClick = { menuState.navigateBack() })
-                            })
-                    }
-                }
-            }
-        }
-
-    }
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
