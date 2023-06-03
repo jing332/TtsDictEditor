@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.drake.net.utils.withDefault
+import com.github.jing332.tts_dict_editor.const.AppConst
 import com.github.jing332.tts_dict_editor.help.DictFileManager
 import com.github.jing332.tts_dict_editor.help.DictFileManager.Companion.toTxt
 import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
@@ -16,6 +17,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
 import java.io.InputStream
 import kotlin.coroutines.coroutineContext
 
@@ -162,6 +164,11 @@ class RuleManagerViewModel : ViewModel() {
 
         requestSaveTxt()
         return count
+    }
+
+    suspend fun export(): String {
+        val gwrs = groupWithRules()
+        return AppConst.json.encodeToString(gwrs)
     }
 
 }

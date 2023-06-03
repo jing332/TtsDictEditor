@@ -56,7 +56,7 @@ import com.drake.net.utils.withIO
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.app
 import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
-import com.github.jing332.tts_dict_editor.ui.ErrorDialog
+import com.github.jing332.tts_dict_editor.ui.widget.ErrorDialog
 import com.github.jing332.tts_dict_editor.ui.widget.LoadingDialog
 import com.github.jing332.tts_dict_editor.utils.FileUtils.readAllText
 import com.github.jing332.tts_server_android.util.toast

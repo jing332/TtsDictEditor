@@ -61,7 +61,7 @@ import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
 import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
-import com.github.jing332.tts_dict_editor.ui.ErrorDialog
+import com.github.jing332.tts_dict_editor.ui.widget.ErrorDialog
 import com.github.jing332.tts_dict_editor.ui.widget.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_dict_editor.utils.observeNoSticky
@@ -94,6 +94,7 @@ class RuleManagerActivity : ComponentActivity() {
         var titleState by mutableStateOf("")
         var subTitleState by mutableStateOf("")
         var isVisibleImportConfig by mutableStateOf(false)
+        var exportConfigJson by mutableStateOf("")
         var errDialog by mutableStateOf<Pair<String, Throwable?>?>(null)
 
         vm.saveTxtLiveData.observeNoSticky(this) {
@@ -237,12 +238,12 @@ class RuleManagerActivity : ComponentActivity() {
                                             text = { Text(getString(R.string.import_config)) },
                                             leadingIcon = {
                                                 Icon(
-                                                    Icons.Filled.Input,
-                                                    "",
+                                                    Icons.Filled.Input, "",
                                                     tint = MaterialTheme.colorScheme.onBackground
                                                 )
                                             },
                                             onClick = {
+                                                isMoreOptionsVisible = false
                                                 isVisibleImportConfig = true
                                             }
                                         )
@@ -250,12 +251,17 @@ class RuleManagerActivity : ComponentActivity() {
                                             text = { Text(getString(R.string.export_config)) },
                                             leadingIcon = {
                                                 Icon(
-                                                    Icons.Filled.Output,
-                                                    "",
+                                                    Icons.Filled.Output, "",
                                                     tint = MaterialTheme.colorScheme.onBackground
                                                 )
                                             },
-                                            onClick = { /*TODO*/ }
+                                            onClick = {
+                                                isMoreOptionsVisible = false
+                                                coroutineScope.launch {
+                                                    exportConfigJson =
+                                                        com.drake.net.utils.withDefault { vm.export() }
+                                                }
+                                            }
                                         )
                                     }
                                 }
@@ -291,6 +297,12 @@ class RuleManagerActivity : ComponentActivity() {
                             successToast = getString(R.string.import_success_msg, count)
                         }
                     )
+
+                if (exportConfigJson.isNotEmpty()) {
+                    ConfigExportBottomSheet(json = exportConfigJson) {
+                        exportConfigJson = ""
+                    }
+                }
             }
         }
 
@@ -329,6 +341,7 @@ class RuleManagerActivity : ComponentActivity() {
                 }
             )
     }
+
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable

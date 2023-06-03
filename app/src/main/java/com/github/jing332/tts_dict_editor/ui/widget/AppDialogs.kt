@@ -1,4 +1,4 @@
-package com.github.jing332.tts_dict_editor.ui
+package com.github.jing332.tts_dict_editor.ui.widget
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
