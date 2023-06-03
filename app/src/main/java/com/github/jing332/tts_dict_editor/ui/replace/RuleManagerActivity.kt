@@ -351,21 +351,17 @@ class RuleManagerActivity : ComponentActivity() {
     ) {
         val list = vm.list
         // 保存展开的分组ID 提高效率 避免每次item都要去list中查找
-        val expandedGroups = remember { mutableStateListOf<Long>() }
+//        var expandedGroups by remember { mutableStateOf<List<Long>>(emptyList()) }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
+            val groups = list.filterIsInstance<ReplaceRuleGroup>()
             list.forEachIndexed { index, item ->
                 when (item) {
                     is ReplaceRuleGroup -> {
                         stickyHeader(key = "group_${item.id}") {
                             GroupItem(
+                                modifier = Modifier.animateItemPlacement(),
                                 name = item.name,
-                                isExpanded = if (item.isExpanded) {
-                                    expandedGroups.add(item.id)
-                                    true
-                                } else {
-                                    expandedGroups.remove(item.id)
-                                    false
-                                },
+                                isExpanded = item.isExpanded,
                                 onClick = { onChangeExpanded.invoke(item) },
                                 onEdit = { onEditGroup.invoke(item) },
                                 onDeleteAction = { vm.deleteGroup(item) },
@@ -376,58 +372,57 @@ class RuleManagerActivity : ComponentActivity() {
 
                     is ReplaceRule -> {
                         item(key = "${item.groupId}_${item.id}") {
-                            if (expandedGroups.contains(item.groupId))
+                            if (groups.find { it.id == item.groupId && it.isExpanded } != null) {
                                 ReplaceRuleItem(
-                                    item.name.ifBlank { "${item.pattern} -> ${item.replacement}" },
+                                    item.name.ifBlank { "${item.pattern} => ${item.replacement}" },
                                     modifier = Modifier.animateItemPlacement(),
                                     onDelete = { onDeleteRule.invoke(item) },
                                     onClick = { onEditRule.invoke(item) },
                                     isChecked = item.isEnabled,
                                     onCheckedChange = { onEnabledChange.invoke(item) }
                                 )
+                            }
                         }
                     }
                 }
             }
         }
     }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun GroupInfoEditDialog(
+        name: String,
+        onNameChange: (String) -> Unit,
+        onDismissRequest: () -> Unit,
+        onConfirm: () -> Unit
+    ) {
+        AlertDialog(title = { Text(stringResource(R.string.edit_group)) },
+            onDismissRequest = onDismissRequest,
+            confirmButton = {
+                Button(onClick = onConfirm) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+            text = {
+                Column(
+                    Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text(stringResource(R.string.group_name)) },
+                        value = name,
+                        onValueChange = onNameChange,
+                    )
+                }
+            })
+    }
+
+    @Preview
+    @Composable
+    fun PreviewDialog() {
+        var name by remember { mutableStateOf("123") }
+        GroupInfoEditDialog(name, { name = it }, {}, {})
+    }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun GroupInfoEditDialog(
-    name: String,
-    onNameChange: (String) -> Unit,
-    onDismissRequest: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(title = { Text(stringResource(R.string.edit_group)) },
-        onDismissRequest = onDismissRequest,
-        confirmButton = {
-            Button(onClick = onConfirm) {
-                Text(stringResource(R.string.confirm))
-            }
-        },
-        text = {
-            Column(
-                Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(stringResource(R.string.group_name)) },
-                    value = name,
-                    onValueChange = onNameChange,
-                )
-            }
-        })
-}
-
-
-@Preview
-@Composable
-fun PreviewDialog() {
-    var name by remember { mutableStateOf("123") }
-    GroupInfoEditDialog(name, { name = it }, {}, {})
-}
-

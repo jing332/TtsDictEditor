@@ -34,6 +34,7 @@ import me.saket.cascade.rememberCascadeState
 
 @Composable
 fun GroupItem(
+    modifier: Modifier,
     name: String,
     isExpanded: Boolean,
     onClick: () -> Unit,
@@ -42,7 +43,7 @@ fun GroupItem(
     onImportAction: () -> Unit,
 ) {
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable { onClick.invoke() },
