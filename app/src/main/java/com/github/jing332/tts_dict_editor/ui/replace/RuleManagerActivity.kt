@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Input
 import androidx.compose.material.icons.filled.MoreVert
@@ -148,6 +149,14 @@ class RuleManagerActivity : ComponentActivity() {
                         var isVisibleAddMenu by remember { mutableStateOf(false) }
                         TopAppBar(
                             modifier = Modifier.fillMaxWidth(),
+                            navigationIcon = {
+                                IconButton(onClick = { finish() }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.ArrowBack,
+                                        contentDescription = stringResource(id = R.string.back)
+                                    )
+                                }
+                            },
                             title = {
                                 Column {
                                     Text(

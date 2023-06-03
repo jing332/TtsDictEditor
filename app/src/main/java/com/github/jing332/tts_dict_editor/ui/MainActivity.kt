@@ -16,11 +16,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddBusiness
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,6 +58,7 @@ import com.github.jing332.tts_dict_editor.ui.replace.RuleManagerActivity
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_server_android.util.longToast
 import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
+import com.github.jing332.tts_dict_editor.utils.AndroidUtils.requestDesktopShortcut
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
 
@@ -102,7 +105,7 @@ class MainActivity : ComponentActivity() {
                         })
                 }, content = { pad ->
                     Surface(modifier = Modifier.padding(pad)) {
-                        dictFilesScreen()
+                        DictFileManagerScreen()
                     }
                 }
 
@@ -153,11 +156,11 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    fun dictFilesScreen() {
+    fun DictFileManagerScreen() {
         val models = vm.dictFilesFlow.collectAsState(initial = listOf())
         LazyColumn {
             items(models.value.toTypedArray(), key = { it.id }) {
-                dictFileItem(
+                DictFileItem(
                     it.copy(
                         filePath = try {
                             this@MainActivity.getPath(Uri.parse(it.filePath))
@@ -177,18 +180,31 @@ class MainActivity : ComponentActivity() {
                         mDictFileActivityLauncher.launch(it)
                     }, onDelete = {
                         appDb.dictFileDao.delete(it)
-                    })
+                    },
+                    onDesktopShortcut = {
+                        requestDesktopShortcut(
+                            it.name,
+                            it.id.toString(),
+                            R.mipmap.ic_new_launcher_round,
+                            Intent(this@MainActivity, RuleManagerActivity::class.java).apply {
+                                data = Uri.parse(it.filePath)
+                                putExtra("name", it.name)
+                            }
+                        )
+                    }
+                )
             }
         }
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun dictFileItem(
+    fun DictFileItem(
         dictFile: DictFile,
         onReplaceRuleEdit: () -> Unit,
         onEdit: () -> Unit,
         onDelete: () -> Unit,
+        onDesktopShortcut: () -> Unit,
     ) {
         Card(
             onClick = onReplaceRuleEdit,
@@ -197,9 +213,7 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 4.dp, vertical = 8.dp)
-                .clickable {
-                    onReplaceRuleEdit.invoke()
-                },
+                .clickable { onReplaceRuleEdit.invoke() },
         ) {
             ConstraintLayout(
                 Modifier
@@ -259,6 +273,21 @@ class MainActivity : ComponentActivity() {
                     CascadeDropdownMenu(state = menuState,
                         expanded = isMoreOptionsVisible,
                         onDismissRequest = { isMoreOptionsVisible = false }) {
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text(stringResource(R.string.desktop_shortcut)) },
+                            onClick = {
+                                isMoreOptionsVisible = false
+                                onDesktopShortcut.invoke()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.AddBusiness,
+                                    stringResource(R.string.desktop_shortcut),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            })
+
+                        Divider(modifier = Modifier.padding(vertical = 4.dp))
 
                         DropdownMenuItem(text = { Text(stringResource(R.string.delete)) },
                             leadingIcon = {
