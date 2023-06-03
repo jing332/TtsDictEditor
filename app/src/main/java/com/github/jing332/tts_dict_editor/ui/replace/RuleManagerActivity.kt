@@ -276,6 +276,7 @@ class RuleManagerActivity : ComponentActivity() {
                                         vm.updateOrAddRule(it.copy(isEnabled = !it.isEnabled))
                                     }
                                 },
+                                onChangeExpanded = { vm.updateOrAddGroup(it.copy(isExpanded = !it.isExpanded)) },
                                 onEditGroup = { groupInfoEdit = it },
                                 onEditRule = { launchEditRule(it) },
                                 onDeleteRule = { coroutineScope.launch { vm.deleteRule(it) } },
@@ -348,13 +349,13 @@ class RuleManagerActivity : ComponentActivity() {
     private fun Screen(
         onEnabledChange: (ReplaceRule) -> Unit,
         onEditGroup: (ReplaceRuleGroup) -> Unit,
+        onChangeExpanded: (ReplaceRuleGroup) -> Unit,
         onEditRule: (ReplaceRule) -> Unit,
         onDeleteRule: (ReplaceRule) -> Unit,
     ) {
         val list = vm.list
-        val expandedGroups = remember {
-            mutableStateListOf(*list.filterIsInstance<ReplaceRuleGroup>().toTypedArray())
-        }
+        // 保存展开的分组ID 提高效率 避免每次item都要去list中查找
+        val expandedGroups = remember { mutableStateListOf<Long>() }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             list.forEachIndexed { index, item ->
                 when (item) {
@@ -362,13 +363,14 @@ class RuleManagerActivity : ComponentActivity() {
                         stickyHeader(key = "group_${item.id}") {
                             GroupItem(
                                 name = item.name,
-                                isExpanded = expandedGroups.indexOfFirst { it.id == item.id } > -1,
-                                onClick = {
-                                    if (expandedGroups.indexOfFirst { it.id == item.id } > -1)
-                                        expandedGroups.remove(item)
-                                    else
-                                        expandedGroups.add(item)
+                                isExpanded = if (item.isExpanded) {
+                                    expandedGroups.add(item.id)
+                                    true
+                                } else {
+                                    expandedGroups.remove(item.id)
+                                    false
                                 },
+                                onClick = { onChangeExpanded.invoke(item) },
                                 onEdit = { onEditGroup.invoke(item) },
                                 onDeleteAction = { vm.deleteGroup(item) }
                             )
@@ -377,7 +379,7 @@ class RuleManagerActivity : ComponentActivity() {
 
                     is ReplaceRule -> {
                         item(key = "${item.groupId}_${item.id}") {
-                            if (expandedGroups.indexOfFirst { it.id == item.groupId } > -1)
+                            if (expandedGroups.contains(item.groupId))
                                 ReplaceRuleItem(
                                     item.name.ifBlank { "${item.pattern} -> ${item.replacement}" },
                                     modifier = Modifier.animateItemPlacement(),

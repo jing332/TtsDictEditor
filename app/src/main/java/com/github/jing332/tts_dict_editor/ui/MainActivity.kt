@@ -261,7 +261,7 @@ class MainActivity : ComponentActivity() {
                         onDismissRequest = { isMoreOptionsVisible = false }) {
 
                         DropdownMenuItem(text = { Text(stringResource(R.string.delete)) },
-                            trailingIcon = {
+                            leadingIcon = {
                                 Icon(
                                     Icons.Filled.Delete,
                                     stringResource(R.string.delete),
@@ -294,43 +294,3 @@ class MainActivity : ComponentActivity() {
     }
 
 }
-
-
-/*
-@Composable
-fun widget(vm: MainActivityViewModel, modifier: Modifier = Modifier) {
-    val models = vm.getModels().observeAsState()
-    LazyColumn {
-        items(count = models.value?.size ?: 0, key = {
-            models.value!![it].id
-        }, itemContent = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                Text(
-                    text = models.value!![it].name,
-                    modifier = Modifier.padding(start = 8.dp),
-                    style = MaterialTheme.typography.titleSmall
-                )
-
-                itemInGroup(models.value!![it].list, modifier)
-            }
-        }
-        )
-    }
-}
-
-@Composable
-fun itemInGroup(list: List<DictFileItemModel>, modifier: Modifier) {
-    Column(modifier = modifier) {
-        list.forEach {
-            Text(
-                text = it.name,
-                modifier = Modifier.padding(start = 8.dp),
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-    }
-}*/

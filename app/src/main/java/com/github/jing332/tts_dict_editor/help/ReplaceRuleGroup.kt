@@ -6,5 +6,8 @@ import kotlinx.serialization.Serializable
 
 @Parcelize
 @Serializable
-data class ReplaceRuleGroup(val name: String = "", val id: Long = 0, var order: Int = 0) :
-    Parcelable
+data class ReplaceRuleGroup(
+    val name: String = "", val id: Long = 0,
+    var order: Int = 0,
+    var isExpanded: Boolean = false,
+) : Parcelable
