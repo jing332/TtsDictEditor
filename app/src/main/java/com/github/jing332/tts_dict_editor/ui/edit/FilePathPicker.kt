@@ -73,24 +73,27 @@ fun FilePathPicker(
     val picker = rememberLauncherForActivityResult(AppActivityResultContracts.OpenDocument()) {
         onResult.invoke(it)
     }
+    if (uriString.isNotBlank()) {
+        val path =
+            LocalContext.current.getPath(uriString.toUri(), true)
+                ?: LocalContext.current.getPath(uriString.toUri(), false)
+                ?: uriString
 
-    val path =
-        LocalContext.current.getPath(uriString.toUri(), false)
-            ?: LocalContext.current.getPath(
-                uriString.toUri(), true
-            ) ?: return
-    if (FileTools.isAndroidDataPath(path) && isA13Mode) {
-        var isVisibleDialog by remember { mutableStateOf(true) }
-        if (isVisibleDialog)
-            AndroidDataDirSelectDialog(onDismissRequest = { isVisibleDialog = false }, onResult = {
-                isVisibleDialog = false
-                val uri =
-                    "${Environment.getExternalStorageDirectory().absolutePath}/Android/data/$it"
-                        .toContentUri(false).toString()
-                picker.launch(arrayOf(uri, *mimeTypes.toTypedArray()))
-            })
+        if (FileTools.isAndroidDataPath(path) && isA13Mode) {
+            var isVisibleDialog by remember { mutableStateOf(true) }
+            if (isVisibleDialog)
+                AndroidDataDirSelectDialog(
+                    onDismissRequest = { isVisibleDialog = false },
+                    onResult = {
+                        isVisibleDialog = false
+                        val uri =
+                            "${Environment.getExternalStorageDirectory().absolutePath}/Android/data/$it"
+                                .toContentUri(false).toString()
+                        picker.launch(arrayOf(uri, *mimeTypes.toTypedArray()))
+                    })
 
-        return
+            return
+        }
     }
 
     LaunchedEffect(uriString) {

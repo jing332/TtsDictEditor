@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Parcelable
 import android.provider.DocumentsContract
 import androidx.activity.result.contract.ActivityResultContract
@@ -63,9 +64,12 @@ object AppActivityResultContracts {
                             or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
                             or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
                 )
-                putExtra("android.provider.extra.SHOW_ADVANCED", true)
-                    .putExtra("android.content.extra.SHOW_ADVANCED", true)
-                    .putExtra(DocumentsContract.EXTRA_INITIAL_URI, Uri.parse(initialUri))
+                putExtra(
+                    "android.provider.extra.SHOW_ADVANCED",
+                    true
+                ).putExtra("android.content.extra.SHOW_ADVANCED", true)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && initialUri.isNotBlank())
+                    putExtra(DocumentsContract.EXTRA_INITIAL_URI, Uri.parse(initialUri))
             }
         }
     }

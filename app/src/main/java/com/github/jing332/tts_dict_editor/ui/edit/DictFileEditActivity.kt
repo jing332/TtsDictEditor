@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -42,6 +43,7 @@ import com.github.jing332.tts_dict_editor.data.entites.DictFile
 import com.github.jing332.tts_dict_editor.ui.widget.Widgets
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
+import com.github.jing332.tts_dict_editor.utils.FileUriTools.toContentUri
 import me.saket.cascade.CascadeDropdownMenu
 
 @Suppress("DEPRECATION")
@@ -121,11 +123,16 @@ class DictFileEditActivity : ComponentActivity() {
                 onResult = {
                     filePickerUri = null
                     it?.let { uri ->
-                        context.contentResolver.takePersistableUriPermission(
-                            uri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                        )
-                        vm.updateFileUri(uri.toString())
+                        kotlin.runCatching {
+                            context.contentResolver.takePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                            )
+                        }.onSuccess {
+                            vm.updateFileUri(uri.toString())
+                        }.onFailure {
+
+                        }
                     }
                 }
             )
@@ -173,12 +180,20 @@ class DictFileEditActivity : ComponentActivity() {
                         CascadeDropdownMenu(
                             expanded = isVisibleMenu,
                             onDismissRequest = { isVisibleMenu = false }) {
+
+                            Text(
+                                stringResource(R.string.select_file),
+                                modifier = Modifier
+                                    .align(Alignment.CenterHorizontally)
+                                    .padding(4.dp),
+                                style = MaterialTheme.typography.titleMedium
+                            )
                             androidx.compose.material3.DropdownMenuItem(
-                                text = { Text(Environment.getExternalStorageDirectory().absolutePath) },
+                                text = { Text(stringResource(R.string.internal_storage)) },
                                 onClick = {
                                     isVisibleMenu = false
                                     filePickerUri =
-                                        false to Environment.getExternalStorageDirectory().absolutePath
+                                        false to "/".toContentUri(false).toString()
                                 }
                             )
                             androidx.compose.material3.DropdownMenuItem(
@@ -186,7 +201,9 @@ class DictFileEditActivity : ComponentActivity() {
                                 onClick = {
                                     isVisibleMenu = false
                                     filePickerUri =
-                                        false to Environment.getExternalStorageDirectory().absolutePath + "/Android/data"
+                                        false to (Environment.getExternalStorageDirectory().absolutePath + "/Android/data").toContentUri(
+                                            isTree = false // Android/data 必须 isTree = false
+                                        ).toString()
                                 }
                             )
 
@@ -195,7 +212,9 @@ class DictFileEditActivity : ComponentActivity() {
                                 onClick = {
                                     isVisibleMenu = false
                                     filePickerUri =
-                                        true to Environment.getExternalStorageDirectory().absolutePath + "/Android/data"
+                                        true to (Environment.getExternalStorageDirectory().absolutePath + "/Android/data").toContentUri(
+                                            isTree = false // Android/data 必须 isTree = false
+                                        ).toString()
                                 }
                             )
                         }
