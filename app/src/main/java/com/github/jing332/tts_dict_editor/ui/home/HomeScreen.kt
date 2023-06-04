@@ -5,7 +5,6 @@ package com.github.jing332.tts_dict_editor.ui.home
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,24 +49,19 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavType
 import com.github.jing332.tts_dict_editor.R
-import com.github.jing332.tts_dict_editor.const.AppConst
 import com.github.jing332.tts_dict_editor.data.appDb
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
-import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
 import com.github.jing332.tts_dict_editor.ui.AppNavRoutes
 import com.github.jing332.tts_dict_editor.ui.LocalNavController
 import com.github.jing332.tts_dict_editor.ui.LocalSnackbarHostState
-import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditActivity
 import com.github.jing332.tts_dict_editor.ui.navigateSingleTop
-import com.github.jing332.tts_dict_editor.ui.replace.RuleManagerActivity
+import com.github.jing332.tts_dict_editor.ui.replace.ReplaceRuleActivity
 import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
 import com.github.jing332.tts_dict_editor.utils.AndroidUtils.requestDesktopShortcut
 import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
-import java.net.URLDecoder
 
 @Composable
 internal fun HomeScreen(drawerState: DrawerState) {
@@ -138,7 +132,7 @@ private fun DictFileManagerScreen(
                     } ?: it.filePath,
                 ), onReplaceRuleEdit = {
                     context.startActivity(
-                        Intent(context, RuleManagerActivity::class.java).apply {
+                        Intent(context, ReplaceRuleActivity::class.java).apply {
                             data = Uri.parse(it.filePath)
                             putExtra("name", it.name)
                         })
@@ -152,7 +146,7 @@ private fun DictFileManagerScreen(
                         it.name,
                         it.id.toString(),
                         R.mipmap.ic_new_launcher_round,
-                        Intent(context, RuleManagerActivity::class.java).apply {
+                        Intent(context, ReplaceRuleActivity::class.java).apply {
                             data = Uri.parse(it.filePath)
                             putExtra("name", it.name)
                         }

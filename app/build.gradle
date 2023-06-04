@@ -10,6 +10,12 @@ static def releaseTime() {
     return new Date().format("yy.MMddHH", TimeZone.getTimeZone("GMT+8"))
 }
 
+// 秒时间戳
+static def buildTime(){
+    def t = new Date().time / 1000
+    return (long)t
+}
+
 def name = "editor"
 def version = "1." + releaseTime()
 def gitCommits = Integer.parseInt('git rev-list HEAD --count'.execute().text.trim())
@@ -40,8 +46,8 @@ android {
             arg("room.expandProjection", "true")
         }
 
-//        buildConfigField("long", "VERSION_CODE", "${defaultConfig.versionCode}")
-//        buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}\"")
+        // 写入构建 秒时间戳
+        buildConfigField("long", "BUILD_TIME", "${buildTime()}")
     }
 
     signingConfigs {

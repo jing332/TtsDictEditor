@@ -36,6 +36,7 @@ val LocalSnackbarHostState = staticCompositionLocalOf<SnackbarHostState> {
     error("SnackbarHostState has not been initialized! ")
 }
 
+
 class MainActivity : ComponentActivity() {
     private val vm: MainActivityViewModel by viewModels()
 

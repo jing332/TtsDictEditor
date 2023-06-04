@@ -20,6 +20,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import kotlin.math.max
@@ -36,7 +39,7 @@ fun DropMenuTextField(
     values: List<String>,
     onKeyChange: (key: Any) -> Unit,
 ) {
-    var value by remember { mutableStateOf(values[max(0, keys.indexOf(key))]) }
+    var value = values.getOrNull(max(0, keys.indexOf(key))) ?: ""
     var menuExpanded by remember { mutableStateOf(false) }
 
     Column {
@@ -64,14 +67,19 @@ fun DropMenuTextField(
             expanded = menuExpanded,
             onDismissRequest = { menuExpanded = false }) {
             values.forEachIndexed { index, s ->
+                val checked = key == keys[index]
                 DropdownMenuItem(
-                    text = { Text(s) },
+                    text = {
+                        Text(
+                            s, fontWeight = if (checked) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
                     onClick = {
                         menuExpanded = false
                         value = s
                         onKeyChange.invoke(keys[index])
                     }, modifier = Modifier.background(
-                        if (key == keys[index]) MaterialTheme.colorScheme.surfaceVariant
+                        if (checked) MaterialTheme.colorScheme.surfaceVariant
                         else Color.Transparent
                     )
                 )

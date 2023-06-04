@@ -30,6 +30,7 @@ class RuleEditViewModel : ViewModel() {
         mReplaceRule?.let { rule ->
             groupsState.clear()
             groupsState.addAll(groups)
+            groupKeyState.value = groups.first { it.id == rule.groupId }
 
             nameState.value = rule.name
             patternState.value = rule.pattern
