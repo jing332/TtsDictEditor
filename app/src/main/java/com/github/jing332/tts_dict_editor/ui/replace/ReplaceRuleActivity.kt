@@ -1,12 +1,17 @@
 package com.github.jing332.tts_dict_editor.ui.replace
 
+import android.graphics.Rect
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
+import android.view.View
+import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
@@ -23,6 +28,10 @@ import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
 import com.github.jing332.tts_dict_editor.utils.observeNoSticky
 import kotlinx.coroutines.launch
 
+var isKeyboardVisibleState = mutableStateOf(false)
+val LocalSoftKeyboardVisible =
+    staticCompositionLocalOf<MutableState<Boolean>> { isKeyboardVisibleState }
+
 class ReplaceRuleActivity : ComponentActivity() {
     companion object {
         const val TAG = "RuleManagerActivity"
@@ -34,6 +43,34 @@ class ReplaceRuleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        val contentView = findViewById<View>(android.R.id.content)
+        val rootView = contentView.rootView
+
+        val onGlobalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
+            val r = Rect()
+            contentView.getWindowVisibleDisplayFrame(r)
+            val screenHeight = rootView.height
+
+            // r.bottom is the position above soft keypad or device button.
+            // if keypad is shown, the r.bottom is smaller than that before.
+            val keypadHeight = screenHeight - r.bottom
+
+            Log.d(TAG, "keypadHeight = $keypadHeight")
+
+            if (keypadHeight > screenHeight * 0.15) { // 0.15 ratio is perhaps enough to determine keypad height.
+                // keyboard is opened
+                if (!isKeyboardVisibleState.value) {
+                    isKeyboardVisibleState.value = true
+                }
+            } else {
+                // keyboard is closed
+                if (isKeyboardVisibleState.value) {
+                    isKeyboardVisibleState.value = false
+                }
+            }
+        }
+        rootView.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
 
         val uri = intent.data
         if (uri == null) {

@@ -10,30 +10,10 @@ import android.provider.DocumentsContract
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import com.github.jing332.tts_dict_editor.const.IntentKeys
-import com.github.jing332.tts_dict_editor.help.ReplaceRule
-import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
-import com.github.jing332.tts_dict_editor.ui.replace.edit.RuleEditActivity
-import com.github.jing332.tts_dict_editor.utils.FileUriTools.toContentUri
 
 
 object AppActivityResultContracts {
-    @Suppress("DEPRECATION")
-    class EditReplaceRule() :
-        ActivityResultContract<Pair<List<ReplaceRuleGroup>, ReplaceRule>, ReplaceRule?>() {
-        override fun createIntent(
-            context: Context,
-            input: Pair<List<ReplaceRuleGroup>, ReplaceRule>
-        ): Intent {
-            return Intent(context, RuleEditActivity::class.java).apply {
-                putExtra(RuleEditActivity.KEY_GROUPS, input.first.toTypedArray())
-                putExtra(IntentKeys.KEY_DATA, input.second)
-            }
-        }
 
-        override fun parseResult(resultCode: Int, intent: Intent?): ReplaceRule? {
-            return intent?.getParcelableExtra(IntentKeys.KEY_DATA)
-        }
-    }
 
     /**
      * 用于传递Parcelable数据

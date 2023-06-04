@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class)
 
 package com.github.jing332.tts_dict_editor.ui.replace
 
@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -55,7 +54,6 @@ import com.talhafaki.composablesweettoast.util.SweetToastUtil
 import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
 import org.burnoutcrew.reorderable.ReorderableItem
-import org.burnoutcrew.reorderable.detectReorder
 import org.burnoutcrew.reorderable.detectReorderAfterLongPress
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
 import org.burnoutcrew.reorderable.reorderable
@@ -346,11 +344,7 @@ private fun Screen(
                 is ReplaceRule -> {
                     val key = "${item.groupId}_${item.id}"
                     item(key = key) {
-                        var group by remember { mutableStateOf<ReplaceRuleGroup?>(null) }
-                        if (group?.id != item.groupId)
-                            group = groups.find { it.id == item.groupId }
-
-                        if (group?.isExpanded == true) {
+                        if (groups.find { it.id == item.groupId }?.isExpanded == true) {
                             ReorderableItem(state = orderState, key = key) { isDragging ->
                                 val elevation = animateDpAsState(
                                     if (isDragging) 2.dp else 0.dp,

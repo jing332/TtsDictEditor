@@ -49,4 +49,5 @@
     <string name="desktop_shortcut">桌面快捷方式</string>
     <string name="about">关于</string>
     <string name="open_drawer_menu">打开抽屉菜单</string>
+    <string name="insert_pinyin">插入拼音声调</string>
 </resources>
