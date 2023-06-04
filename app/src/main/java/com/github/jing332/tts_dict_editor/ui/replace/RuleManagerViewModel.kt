@@ -20,6 +20,8 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import java.io.InputStream
 import kotlin.coroutines.coroutineContext
+import kotlin.math.max
+import kotlin.math.min
 
 class RuleManagerViewModel : ViewModel() {
     companion object {
@@ -34,10 +36,11 @@ class RuleManagerViewModel : ViewModel() {
         val list = mutableListOf<GroupWithReplaceRule>()
         val rules = rules()
         groups().forEach { group ->
-            list.add(GroupWithReplaceRule(group, rules.filter {
+            list.add(GroupWithReplaceRule(group, rules.filterIndexed { index, replaceRule ->
                 if (!coroutineContext.isActive) return list
 
-                it.groupId == group.id
+                replaceRule.order = index
+                replaceRule.groupId == group.id
             }))
         }
 
@@ -82,7 +85,6 @@ class RuleManagerViewModel : ViewModel() {
      */
     fun updateOrAddRule(rule: ReplaceRule, isUpdate: Boolean = true) {
         synchronized(this) {
-
             val idx = list.indexOfFirst { it is ReplaceRule && it.id == rule.id }
             if (idx > -1) { // Update
                 val src = list[idx] as ReplaceRule
@@ -171,9 +173,31 @@ class RuleManagerViewModel : ViewModel() {
         return AppConst.json.encodeToString(gwrs)
     }
 
-    suspend fun exportGroup(group: ReplaceRuleGroup):String {
+    suspend fun exportGroup(group: ReplaceRuleGroup): String {
         val gwrs = groupWithRules().filter { it.group.id == group.id }
         return AppConst.json.encodeToString(gwrs)
+    }
+
+    fun reorder(from: Int, to: Int) {
+        val fromItem = list[from]
+        val toItem = list[to]
+        val startIndex = min(from, to)
+        val endIndex = max(from, to)
+
+        if (fromItem is ReplaceRule && toItem is ReplaceRule && fromItem.groupId == toItem.groupId) {
+            list.add(to, list.removeAt(from))
+            requestSaveTxt()
+        }
+
+//        list.toList().forEachIndexed { index, any ->
+//            if (index in startIndex..endIndex) {
+//                when (index) {
+//                    from -> list.removeAt(index) // 移除
+//                    to -> list[index] = fromItem
+////                    else -> list[index] = any
+//                }
+//            }
+//        }
     }
 
 }

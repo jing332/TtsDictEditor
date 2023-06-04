@@ -44,8 +44,6 @@ internal fun ReplaceRuleItem(
         colors = CardDefaults.elevatedCardColors(),
         elevation = CardDefaults.elevatedCardElevation(),
         modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp)
     ) {
         Row(modifier = modifier.fillMaxSize()) {
             Checkbox(

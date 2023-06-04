@@ -11,9 +11,9 @@ static def releaseTime() {
 }
 
 // 秒时间戳
-static def buildTime(){
+static def buildTime() {
     def t = new Date().time / 1000
-    return (long)t
+    return (long) t
 }
 
 def name = "editor"
@@ -143,11 +143,12 @@ dependencies {
     implementation "com.github.FunnySaltyFish.ComposeDataSaver:data-saver:v1.1.5"
     // https://github.com/tfaki/ComposableSweetToast
     implementation 'com.github.tfaki:ComposableSweetToast:1.0.1'
+    // https://github.com/aclassen/ComposeReorderable
+    implementation "org.burnoutcrew.composereorderable:reorderable:0.9.6"
 
     def accompanist_version = '0.31.3-beta'
     implementation "com.google.accompanist:accompanist-systemuicontroller:${accompanist_version}"
     implementation "com.google.accompanist:accompanist-navigation-animation:${accompanist_version}"
-
 
     // https://github.com/LouisCAD/Splitties
     implementation 'com.louiscad.splitties:splitties-systemservices:3.0.0'

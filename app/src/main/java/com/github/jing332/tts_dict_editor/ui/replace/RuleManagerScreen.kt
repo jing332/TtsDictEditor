@@ -2,13 +2,16 @@
 
 package com.github.jing332.tts_dict_editor.ui.replace
 
-import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -36,20 +39,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.const.AppConst
 import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
-import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
 import com.github.jing332.tts_dict_editor.ui.widget.ErrorDialog
 import com.talhafaki.composablesweettoast.util.SweetToastUtil
 import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
+import org.burnoutcrew.reorderable.ReorderableItem
+import org.burnoutcrew.reorderable.detectReorder
+import org.burnoutcrew.reorderable.detectReorderAfterLongPress
+import org.burnoutcrew.reorderable.rememberReorderableLazyListState
+import org.burnoutcrew.reorderable.reorderable
 
 @Composable
 fun ReplaceRuleManagerScreen(
@@ -230,6 +239,7 @@ fun ReplaceRuleManagerScreen(
                     onDeleteGroup = { vm.deleteGroup(it) },
                     onEditRule = { onEditRule.invoke(it) },
                     onDeleteRule = { coroutineScope.launch { vm.deleteRule(it) } },
+                    onReorder = { from, to -> vm.reorder(from, to) },
                     onExportGroup = {
                         coroutineScope.launch {
                             exportConfigJson =
@@ -295,12 +305,22 @@ private fun Screen(
     onChangeExpanded: (ReplaceRuleGroup) -> Unit,
     onEditRule: (ReplaceRule) -> Unit,
     onDeleteRule: (ReplaceRule) -> Unit,
-
+    onReorder: (fromIndex: Int, toIndex: Int) -> Unit,
     onExportGroup: (ReplaceRuleGroup) -> Unit,
 ) {
     // 保存展开的分组ID 提高效率 避免每次item都要去list中查找
 //        var expandedGroups by remember { mutableStateOf<List<Long>>(emptyList()) }
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    val orderState = rememberReorderableLazyListState(onMove = { from, to ->
+        println("from $from to $to")
+        onReorder.invoke(from.index, to.index)
+    })
+    LazyColumn(
+        state = orderState.listState,
+        modifier = Modifier
+            .fillMaxSize()
+            .reorderable(orderState)
+            .detectReorderAfterLongPress(orderState)
+    ) {
         val groups = list.filterIsInstance<ReplaceRuleGroup>()
         list.forEachIndexed { index, item ->
             when (item) {
@@ -319,16 +339,30 @@ private fun Screen(
                 }
 
                 is ReplaceRule -> {
-                    item(key = "${item.groupId}_${item.id}") {
+                    val key = "${item.groupId}_${item.id}"
+                    item(key = key) {
                         if (groups.find { it.id == item.groupId && it.isExpanded } != null) {
-                            ReplaceRuleItem(
-                                item.name.ifBlank { "${item.pattern} => ${item.replacement}" },
-                                modifier = Modifier.animateItemPlacement(),
-                                onDelete = { onDeleteRule.invoke(item) },
-                                onClick = { onEditRule.invoke(item) },
-                                isChecked = item.isEnabled,
-                                onCheckedChange = { onEnabledChange.invoke(item) }
-                            )
+                            ReorderableItem(state = orderState, key = key) { isDragging ->
+                                val elevation = animateDpAsState(
+                                    if (isDragging) 2.dp else 0.dp,
+                                    label = "拖动"
+                                )
+                                ReplaceRuleItem(
+                                    item.name.ifBlank { "${item.pattern} => ${item.replacement}" },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                        .animateItemPlacement()
+                                        .shadow(
+                                            elevation.value,
+                                            shape = MaterialTheme.shapes.small
+                                        ),
+                                    onDelete = { onDeleteRule.invoke(item) },
+                                    onClick = { onEditRule.invoke(item) },
+                                    isChecked = item.isEnabled,
+                                    onCheckedChange = { onEnabledChange.invoke(item) }
+                                )
+                            }
                         }
                     }
                 }
@@ -372,4 +406,63 @@ private fun GroupInfoEditDialog(
 fun PreviewDialog() {
     var name by remember { mutableStateOf("123") }
     GroupInfoEditDialog(name, { name = it }, {}, {})
+}
+
+@Preview
+@Composable
+fun PreviewOrderList() {
+//    VerticalReorderList()
+//    return
+    val orderState = rememberReorderableLazyListState(onMove = { from, to ->
+        println("from $from to $to")
+    })
+    val list = listOf("1", "2", "3", "4")
+    LazyColumn(
+        state = orderState.listState,
+        modifier = Modifier
+            .fillMaxSize()
+            .reorderable(orderState)
+            .detectReorderAfterLongPress(orderState),
+    ) {
+        items(list, key = { it }) {
+            ReorderableItem(state = orderState, key = it) { isDraging ->
+                Text(
+                    text = it,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun VerticalReorderList() {
+    val data = remember { mutableStateOf(List(100) { "Item $it" }) }
+    val state = rememberReorderableLazyListState(onMove = { from, to ->
+        data.value = data.value.toMutableList().apply {
+            add(to.index, removeAt(from.index))
+        }
+    })
+    LazyColumn(
+        state = state.listState,
+        modifier = Modifier
+            .reorderable(state)
+            .detectReorderAfterLongPress(state)
+    ) {
+        items(data.value, { it }) { item ->
+            ReorderableItem(state, key = item) { isDragging ->
+                val elevation = animateDpAsState(if (isDragging) 16.dp else 0.dp)
+                Column(
+                    modifier = Modifier
+                        .shadow(elevation.value)
+                        .background(MaterialTheme.colorScheme.surface)
+                ) {
+                    Text(item)
+                }
+            }
+        }
+    }
 }
