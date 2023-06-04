@@ -63,7 +63,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -105,31 +104,6 @@ class MainActivity : ComponentActivity() {
         val snackbarHostState = remember { SnackbarHostState() }
         val scope = rememberCoroutineScope()
 
-        var lastBackDownTime by remember { mutableLongStateOf(0L) }
-        var toastMsg by remember { mutableStateOf("") }
-        if (toastMsg.isNotEmpty()) {
-            SweetToastUtil.SweetInfo(
-                message = toastMsg,
-                Toast.LENGTH_SHORT,
-                PaddingValues(bottom = 32.dp)
-            )
-            toastMsg = ""
-        }
-
-        BackHandler {
-            SystemClock.elapsedRealtime().let {
-                if (it - lastBackDownTime <= 1500) {
-                    finish()
-                } else {
-                    lastBackDownTime = it
-                    scope.launch {
-                        snackbarHostState.showSnackbar("")
-                    }
-                    toastMsg = "再按一次退出程序"
-                }
-            }
-        }
-
         CompositionLocalProvider(
             LocalNavController provides navController,
             LocalSnackbarHostState provides snackbarHostState
@@ -139,7 +113,7 @@ class MainActivity : ComponentActivity() {
                 startDestination = AppNavRoutes.DictFileManager.route
             ) {
                 composable(AppNavRoutes.DictFileManager.route) {
-                    MainScreen()
+                    MainScreen { finish() }
                 }
 
                 composable(AppNavRoutes.DictFileEdit.route,
@@ -159,9 +133,6 @@ class MainActivity : ComponentActivity() {
                 composable(AppNavRoutes.About.route) {
                     AboutScreen()
                 }
-            }
-            SnackbarHost(hostState = snackbarHostState) {
-                Text(it.visuals.message)
             }
         }
     }

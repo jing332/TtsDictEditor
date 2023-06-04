@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -57,6 +58,7 @@ import com.github.jing332.tts_dict_editor.data.entites.DictFile
 import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
 import com.github.jing332.tts_dict_editor.ui.AppNavRoutes
 import com.github.jing332.tts_dict_editor.ui.LocalNavController
+import com.github.jing332.tts_dict_editor.ui.LocalSnackbarHostState
 import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditActivity
 import com.github.jing332.tts_dict_editor.ui.navigateSingleTop
 import com.github.jing332.tts_dict_editor.ui.replace.RuleManagerActivity
@@ -93,6 +95,7 @@ internal fun HomeScreen(drawerState: DrawerState) {
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = LocalSnackbarHostState.current) },
         topBar = {
             TopAppBar(modifier = Modifier.fillMaxWidth(),
                 navigationIcon = {

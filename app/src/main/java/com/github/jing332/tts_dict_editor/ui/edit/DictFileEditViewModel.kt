@@ -28,6 +28,7 @@ class DictFileEditViewModel : ViewModel() {
         mDictFile = dictFile
         _nameState.value = dictFile.name
         _filePathState.value = dictFile.filePath
+        println(dictFile.filePath)
     }
 
     fun getDictFile(defaultName: String): DictFile {

@@ -1,11 +1,15 @@
 package com.github.jing332.tts_dict_editor.ui
 
+import android.app.Activity
 import android.os.Bundle
 import android.os.Parcelable
+import android.os.SystemClock
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -26,13 +30,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -43,18 +54,50 @@ import androidx.navigation.NavOptions
 import androidx.navigation.Navigator
 import com.github.jing332.tts_dict_editor.BuildConfig
 import com.github.jing332.tts_dict_editor.R
+import com.github.jing332.tts_dict_editor.app
 import com.github.jing332.tts_dict_editor.ui.home.HomeScreen
+import com.talhafaki.composablesweettoast.util.SweetToastUtil
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 @Composable
 fun MainScreen(
     drawerState: DrawerState = rememberDrawerState(DrawerValue.Closed),
+    onFinishedActivity: () -> Unit,
 ) {
+//    var lastBackDownTime by remember { mutableLongStateOf(0L) }
+    var toastMsg by remember { mutableStateOf("") }
+    if (toastMsg.isNotEmpty()) {
+        SweetToastUtil.SweetInfo(
+            message = toastMsg,
+            Toast.LENGTH_SHORT,
+            PaddingValues(bottom = 32.dp)
+        )
+        toastMsg = ""
+    }
+
+    val snackbarHostState = LocalSnackbarHostState.current
     val navController = LocalNavController.current
     val scope = rememberCoroutineScope()
     BackHandler(enabled = drawerState.isOpen) {
         scope.launch {
             drawerState.close()
+        }
+    }
+    var lastBackDownTime by remember { mutableLongStateOf(0L) }
+    BackHandler(enabled = drawerState.isClosed) {
+        val duration = 2000
+        SystemClock.elapsedRealtime().let {
+            if (it - lastBackDownTime <= duration) {
+                onFinishedActivity.invoke()
+            } else {
+                lastBackDownTime = it
+                scope.launch {
+                    withTimeout(duration.toLong()) {
+                        snackbarHostState.showSnackbar("再按一次退出")
+                    }
+                }
+            }
         }
     }
     ModalNavigationDrawer(
