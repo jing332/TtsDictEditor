@@ -4,8 +4,7 @@ on:
     push:
         branches:
             - "master"
-        paths:
-            - "*.md"
+        
     workflow_dispatch:
 
 jobs:
