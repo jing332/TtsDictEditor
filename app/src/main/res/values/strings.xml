@@ -47,4 +47,6 @@
     <string name="failed_to_load">加载失败</string>
     <string name="internal_storage">内部存储</string>
     <string name="desktop_shortcut">桌面快捷方式</string>
+    <string name="about">关于</string>
+    <string name="open_drawer_menu">打开抽屉菜单</string>
 </resources>

@@ -4,11 +4,12 @@ import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.drawable.Icon
 import android.os.Build
-import android.widget.Toast
+import android.util.Log
 import com.github.jing332.tts_server_android.util.longToast
 
 
@@ -65,5 +66,41 @@ object AndroidUtils {
                 shortcutManager.requestPinShortcut(pinShortcutInfo, successCallback.intentSender)
             }
         }
+    }
+
+    /**
+     * 获取当前app version code
+     */
+    fun getAppVersionCode(context: Context): Long {
+        var appVersionCode: Long = 0
+        try {
+            val packageInfo = context.applicationContext
+                .packageManager
+                .getPackageInfo(context.packageName, 0)
+            appVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageInfo.longVersionCode
+            } else {
+                packageInfo.versionCode.toLong()
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            Log.e("", e.message!!)
+        }
+        return appVersionCode
+    }
+
+    /**
+     * 获取当前app version name
+     */
+    fun getAppVersionName(context: Context): String? {
+        var appVersionName = ""
+        try {
+            val packageInfo = context.applicationContext
+                .packageManager
+                .getPackageInfo(context.packageName, 0)
+            appVersionName = packageInfo.versionName
+        } catch (e: PackageManager.NameNotFoundException) {
+            Log.e("", e.message!!)
+        }
+        return appVersionName
     }
 }
