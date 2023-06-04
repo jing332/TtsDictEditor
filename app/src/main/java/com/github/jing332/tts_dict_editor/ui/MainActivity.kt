@@ -19,9 +19,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.github.jing332.tts_dict_editor.data.appDb
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
 import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditActivity
+import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditScreen
+import com.github.jing332.tts_dict_editor.ui.home.DictFileParamType
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_dict_editor.ui.widget.Widgets.TransparentSystemBars
 import com.github.jing332.tts_server_android.util.longToast
@@ -87,6 +90,20 @@ class MainActivity : ComponentActivity() {
             ) {
                 composable(AppNavRoutes.DictFileManager.route) {
                     MainScreen()
+                }
+
+                composable(AppNavRoutes.DictFileEdit.route,
+                    arguments = listOf(navArgument("dictFile") {
+                        type = DictFileParamType()
+                    }
+                    )) {
+                    @Suppress("DEPRECATION")
+                    val dictFile: DictFile? = it.arguments?.getParcelable("dictFile")
+                    if (dictFile == null) {
+                        navController.popBackStack()
+                        return@composable
+                    }
+                    DictFileEditScreen(dictFile)
                 }
 
                 composable(AppNavRoutes.About.route) {

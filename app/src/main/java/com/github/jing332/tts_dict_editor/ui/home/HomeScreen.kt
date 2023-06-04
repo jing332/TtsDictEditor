@@ -4,6 +4,7 @@ package com.github.jing332.tts_dict_editor.ui.home
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Bundle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,28 +49,47 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import com.github.jing332.tts_dict_editor.R
+import com.github.jing332.tts_dict_editor.const.AppConst
 import com.github.jing332.tts_dict_editor.data.appDb
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
 import com.github.jing332.tts_dict_editor.ui.AppActivityResultContracts
+import com.github.jing332.tts_dict_editor.ui.AppNavRoutes
+import com.github.jing332.tts_dict_editor.ui.LocalNavController
 import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditActivity
+import com.github.jing332.tts_dict_editor.ui.navigateSingleTop
 import com.github.jing332.tts_dict_editor.ui.replace.RuleManagerActivity
 import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
 import com.github.jing332.tts_dict_editor.utils.AndroidUtils.requestDesktopShortcut
 import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
+import java.net.URLDecoder
+
+
+class DictFileParamType() : NavType<DictFile>(isNullableAllowed = false) {
+    @Suppress("DEPRECATION")
+    override fun get(bundle: Bundle, key: String): DictFile? {
+        return bundle.getParcelable(key)
+    }
+
+    override fun parseValue(value: String): DictFile {
+        return AppConst.json.decodeFromString(URLDecoder.decode(value, "UTF-8"))
+    }
+
+    override fun put(bundle: Bundle, key: String, value: DictFile) {
+        bundle.putParcelable(key, value)
+    }
+}
 
 @Composable
 internal fun HomeScreen(drawerState: DrawerState) {
     val scope = rememberCoroutineScope()
+    val navController = LocalNavController.current
 
-    val editDictFileActivityLauncher = rememberLauncherForActivityResult(
-        AppActivityResultContracts.parcelableDataActivity<DictFile>(DictFileEditActivity::class.java)
-    ) {
-        it?.let { dictFile ->
-            appDb.dictFileDao.insert(dictFile)
-        }
+    val dictFileEdit = { dictFile: DictFile ->
+        navController.navigateSingleTop(AppNavRoutes.DictFileEdit.from(dictFile))
     }
 
     Scaffold(
@@ -89,7 +109,7 @@ internal fun HomeScreen(drawerState: DrawerState) {
                 ),
                 actions = {
                     IconButton(onClick = {
-                        editDictFileActivityLauncher.launch(DictFile())
+                        dictFileEdit.invoke(DictFile())
                     }) {
                         Icon(Icons.Filled.Add, stringResource(id = R.string.add))
                     }
@@ -104,7 +124,7 @@ internal fun HomeScreen(drawerState: DrawerState) {
         }, content = { pad ->
             Surface(modifier = Modifier.padding(pad)) {
                 DictFileManagerScreen(onEdit = {
-                    editDictFileActivityLauncher.launch(it)
+                    dictFileEdit.invoke(it)
                 })
             }
         }
@@ -134,6 +154,7 @@ private fun DictFileManagerScreen(
                             putExtra("name", it.name)
                         })
                 }, onEdit = {
+                    onEdit.invoke(it)
                 }, onDelete = {
                     appDb.dictFileDao.delete(it)
                 },
