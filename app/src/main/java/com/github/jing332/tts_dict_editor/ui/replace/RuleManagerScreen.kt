@@ -227,8 +227,13 @@ fun ReplaceRuleManagerScreen(
         },
         content = { pad ->
             Surface(modifier = Modifier.padding(pad)) {
+                var groups by remember { mutableStateOf(emptyList<ReplaceRuleGroup>()) }
+                if (vm.list.size > 0) // list变化时重新过滤出分组
+                    groups = vm.list.filterIsInstance<ReplaceRuleGroup>()
+
                 Screen(
                     list = vm.list,
+                    groups = groups,
                     onEnabledChange = {
                         coroutineScope.launch {
                             vm.updateOrAddRule(it.copy(isEnabled = !it.isEnabled))
@@ -299,6 +304,7 @@ private fun ImportConfigDialog(
 @Composable
 private fun Screen(
     list: List<Any>,
+    groups: List<ReplaceRuleGroup>,
     onEnabledChange: (ReplaceRule) -> Unit,
     onEditGroup: (ReplaceRuleGroup) -> Unit,
     onDeleteGroup: (ReplaceRuleGroup) -> Unit,
@@ -321,7 +327,6 @@ private fun Screen(
             .reorderable(orderState)
             .detectReorderAfterLongPress(orderState)
     ) {
-        val groups = list.filterIsInstance<ReplaceRuleGroup>()
         list.forEachIndexed { index, item ->
             when (item) {
                 is ReplaceRuleGroup -> {
@@ -341,7 +346,11 @@ private fun Screen(
                 is ReplaceRule -> {
                     val key = "${item.groupId}_${item.id}"
                     item(key = key) {
-                        if (groups.find { it.id == item.groupId && it.isExpanded } != null) {
+                        var group by remember { mutableStateOf<ReplaceRuleGroup?>(null) }
+                        if (group?.id != item.groupId)
+                            group = groups.find { it.id == item.groupId }
+
+                        if (group?.isExpanded == true) {
                             ReorderableItem(state = orderState, key = key) { isDragging ->
                                 val elevation = animateDpAsState(
                                     if (isDragging) 2.dp else 0.dp,
