@@ -4,8 +4,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.liveData
 import com.github.jing332.tts_dict_editor.data.appDb
-import com.github.jing332.tts_dict_editor.ui.DictFileItemModel
-import com.github.jing332.tts_dict_editor.ui.ListGroupModel
 
 class HomeScreenViewModel : ViewModel() {
     val dictFilesFlow by lazy { appDb.dictFileDao.flowAll }

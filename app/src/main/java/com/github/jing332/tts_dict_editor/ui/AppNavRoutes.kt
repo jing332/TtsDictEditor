@@ -9,15 +9,8 @@ import java.net.URLEncoder
 import java.nio.charset.Charset
 
 sealed class AppNavRoutes(@StringRes val titleResId: Int, val route: String) {
-    object DictFileEdit : AppNavRoutes(R.string.set_dict_file, "dictFileEdit/{dictFile}") {
-        fun from(dictFile: DictFile): String {
-            return "dictFileEdit/${
-                URLEncoder.encode(
-                    AppConst.json.encodeToString(dictFile),
-                    "UTF-8"
-                )
-            }"
-        }
+    object DictFileEdit : AppNavRoutes(R.string.set_dict_file, "dictFileEdit") {
+        const val KEY_DICT_FILE = "dict_file"
     }
 
     object DictFileManager : AppNavRoutes(R.string.confirm, "DictFileManager")

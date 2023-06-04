@@ -69,29 +69,15 @@ import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
 import java.net.URLDecoder
 
-
-class DictFileParamType() : NavType<DictFile>(isNullableAllowed = false) {
-    @Suppress("DEPRECATION")
-    override fun get(bundle: Bundle, key: String): DictFile? {
-        return bundle.getParcelable(key)
-    }
-
-    override fun parseValue(value: String): DictFile {
-        return AppConst.json.decodeFromString(URLDecoder.decode(value, "UTF-8"))
-    }
-
-    override fun put(bundle: Bundle, key: String, value: DictFile) {
-        bundle.putParcelable(key, value)
-    }
-}
-
 @Composable
 internal fun HomeScreen(drawerState: DrawerState) {
     val scope = rememberCoroutineScope()
     val navController = LocalNavController.current
 
     val dictFileEdit = { dictFile: DictFile ->
-        navController.navigateSingleTop(AppNavRoutes.DictFileEdit.from(dictFile))
+        navController.navigateSingleTop(AppNavRoutes.DictFileEdit.route, args = Bundle().apply {
+            putParcelable(AppNavRoutes.DictFileEdit.KEY_DICT_FILE, dictFile)
+        })
     }
 
     Scaffold(

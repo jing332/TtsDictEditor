@@ -1,4 +1,4 @@
-package com.github.jing332.tts_dict_editor.ui
+package com.github.jing332.tts_dict_editor.ui.home
 
 import android.os.SystemClock
 

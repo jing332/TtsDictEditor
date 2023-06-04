@@ -47,8 +47,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
+import androidx.navigation.NavDeepLinkRequest
+import androidx.navigation.NavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptions
 import androidx.navigation.Navigator
@@ -170,21 +173,52 @@ private fun DrawerContent(modifier: Modifier, navController: NavHostController) 
     }
 }
 
+/*
+* 可传递 Bundle 到 Navigation
+* */
+fun NavController.navigate(
+    route: String,
+    args: Bundle,
+    navOptions: NavOptions? = null,
+    navigatorExtras: Navigator.Extras? = null
+) {
+    val routeLink = NavDeepLinkRequest
+        .Builder
+        .fromUri(NavDestination.createRoute(route).toUri())
+        .build()
 
-fun NavHostController.navigateSingleTop(route: String, popUpToMain: Boolean = false) {
-    val navController = this
-    navController.navigate(route) {
-        // 先清空其他栈，使得返回时能直接回到主界面
-        if (popUpToMain) {
-            popUpTo(navController.graph.startDestinationId) {
-                saveState = true
-                inclusive = false
-                //currentScreen = TranslateScreen.MainScreen
-            }
-        }
-        //从名字就能看出来 跟activity的启动模式中的SingleTop模式一样 避免在栈顶创建多个实例
-        launchSingleTop = true
-        //切换状态的时候保存页面状态
-        restoreState = true
+    val deepLinkMatch = graph.matchDeepLink(routeLink)
+    if (deepLinkMatch != null) {
+        val destination = deepLinkMatch.destination
+        val id = destination.id
+        navigate(id, args, navOptions, navigatorExtras)
+    } else {
+        navigate(route, navOptions, navigatorExtras)
     }
+}
+
+/**
+ * 单例并清空其他栈
+ */
+fun NavHostController.navigateSingleTop(
+    route: String,
+    args: Bundle? = null,
+    popUpToMain: Boolean = false
+) {
+    val navController = this
+    val navOptions = NavOptions.Builder()
+        .setLaunchSingleTop(true)
+        .apply {
+            if (popUpToMain) setPopUpTo(
+                navController.graph.startDestinationId,
+                inclusive = false,
+                saveState = true
+            )
+        }
+        .setRestoreState(true)
+        .build()
+    if (args == null)
+        navController.navigate(route, navOptions)
+    else
+        navController.navigate(route, args, navOptions)
 }
