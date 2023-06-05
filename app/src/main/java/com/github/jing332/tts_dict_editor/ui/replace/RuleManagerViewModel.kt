@@ -173,9 +173,21 @@ class RuleManagerViewModel : ViewModel() {
         return AppConst.json.encodeToString(gwrs)
     }
 
+    suspend fun exportByFormat(format: String): String {
+        val gwrs = groupWithRules()
+        return gwrs.flatMap { it.list }
+            .joinToString("\n") { format.replace("$1", it.pattern).replace("$2", it.replacement) }
+    }
+
     suspend fun exportGroup(group: ReplaceRuleGroup): String {
         val gwrs = groupWithRules().filter { it.group.id == group.id }
         return AppConst.json.encodeToString(gwrs)
+    }
+
+    suspend fun exportGroupByFormat(group: ReplaceRuleGroup, format:String):String{
+        val gwrs = groupWithRules().filter { it.group.id == group.id }
+        return gwrs.flatMap { it.list }
+            .joinToString("\n") { format.replace("$1", it.pattern).replace("$2", it.replacement) }
     }
 
     fun reorder(from: Int, to: Int) {

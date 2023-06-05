@@ -1,4 +1,7 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class)
+@file:OptIn(
+    ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class
+)
 
 package com.github.jing332.tts_dict_editor.ui.replace
 
@@ -17,7 +20,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Input
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Output
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.const.AppConst
+import com.github.jing332.tts_dict_editor.help.AppConfig
 import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
@@ -71,7 +74,13 @@ fun ReplaceRuleManagerScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var isVisibleImportConfig by remember { mutableStateOf(false) }
-    var exportConfigJson by remember { mutableStateOf("") }
+    var exportedConfigText by remember { mutableStateOf("") }
+    // 导出配置  Pair<isVisible, ReplaceRuleGroup>
+    var isVisibleCustomFormatExport by remember {
+        mutableStateOf<Pair<Boolean, ReplaceRuleGroup?>>(
+            false to null
+        )
+    }
 
     var successToast by remember { mutableStateOf<String?>(null) }
     if (successToast != null)
@@ -202,20 +211,17 @@ fun ReplaceRuleManagerScreen(
                                     isVisibleImportConfig = true
                                 }
                             )
-                            androidx.compose.material3.DropdownMenuItem(
-                                text = { Text(stringResource(R.string.config_export)) },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Filled.Output, "",
-                                        tint = MaterialTheme.colorScheme.onBackground
-                                    )
-                                },
-                                onClick = {
+
+                            ConfigExportUiMenu(
+                                onJson = {
                                     isMoreOptionsVisible = false
                                     coroutineScope.launch {
-                                        exportConfigJson =
-                                            com.drake.net.utils.withDefault { vm.export() }
+                                        exportedConfigText = vm.export()
                                     }
+                                },
+                                onCustomFormat = {
+                                    isMoreOptionsVisible = false
+                                    isVisibleCustomFormatExport = true to null
                                 }
                             )
                         }
@@ -243,11 +249,14 @@ fun ReplaceRuleManagerScreen(
                     onEditRule = { onEditRule.invoke(it) },
                     onDeleteRule = { coroutineScope.launch { vm.deleteRule(it) } },
                     onReorder = { from, to -> vm.reorder(from, to) },
-                    onExportGroup = {
-                        coroutineScope.launch {
-                            exportConfigJson =
-                                com.drake.net.utils.withDefault { vm.exportGroup(it) }
-                        }
+                    onExportGroup = { group, isCustomFormat ->
+                        if (isCustomFormat)
+                            isVisibleCustomFormatExport = true to group
+                        else
+                            coroutineScope.launch {
+                                exportedConfigText =
+                                    com.drake.net.utils.withDefault { vm.exportGroup(group) }
+                            }
                     },
                 )
             }
@@ -268,12 +277,34 @@ fun ReplaceRuleManagerScreen(
             }
         )
 
-    if (exportConfigJson.isNotEmpty()) {
-        ConfigExportBottomSheet(json = exportConfigJson) {
-            exportConfigJson = ""
+    if (exportedConfigText.isNotEmpty()) {
+        val fileName =
+            if (exportedConfigText.contains("\"group\":") && exportedConfigText.contains("\"list\":")) "replaceRules.json" else "dict.txt"
+        ConfigExportBottomSheet(json = exportedConfigText, fileName) {
+            exportedConfigText = ""
         }
     }
+
+    if (isVisibleCustomFormatExport.first) {
+        var format by remember { AppConfig.dictExportFormat }
+        CustomExportFormatDialog(
+            format = format,
+            onFormatChange = { format = it },
+            onDismissRequest = {
+                isVisibleCustomFormatExport = false to null
+            },
+            onConfirm = {
+                isVisibleCustomFormatExport = false to null
+                coroutineScope.launch {
+                    exportedConfigText =
+                        if (isVisibleCustomFormatExport.second == null) vm.exportByFormat(format)
+                        else vm.exportGroupByFormat(isVisibleCustomFormatExport.second!!, format)
+                }
+            }
+        )
+    }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -310,7 +341,7 @@ private fun Screen(
     onEditRule: (ReplaceRule) -> Unit,
     onDeleteRule: (ReplaceRule) -> Unit,
     onReorder: (fromIndex: Int, toIndex: Int) -> Unit,
-    onExportGroup: (ReplaceRuleGroup) -> Unit,
+    onExportGroup: (ReplaceRuleGroup, Boolean) -> Unit,
 ) {
     // 保存展开的分组ID 提高效率 避免每次item都要去list中查找
 //        var expandedGroups by remember { mutableStateOf<List<Long>>(emptyList()) }
@@ -336,7 +367,7 @@ private fun Screen(
                             onClick = { onChangeExpanded.invoke(item) },
                             onEdit = { onEditGroup.invoke(item) },
                             onDeleteAction = { onDeleteGroup.invoke(item) },
-                            onImportAction = { onExportGroup.invoke(item) },
+                            onExportAction = { onExportGroup.invoke(item, it) },
                         )
                     }
                 }

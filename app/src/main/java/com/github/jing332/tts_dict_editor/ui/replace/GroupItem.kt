@@ -10,7 +10,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Output
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,7 +39,7 @@ fun GroupItem(
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDeleteAction: () -> Unit,
-    onImportAction: () -> Unit,
+    onExportAction: (isCustomType: Boolean) -> Unit,
 ) {
     Row(
         modifier
@@ -90,19 +89,11 @@ fun GroupItem(
                         isMoreOptionsVisible = false
                     }
                 )
-                androidx.compose.material3.DropdownMenuItem(
-                    leadingIcon = {
-                        Icon(
-                            Icons.Filled.Output, "",
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
-                    },
-                    text = { Text(stringResource(R.string.config_export)) },
-                    onClick = {
-                        onImportAction.invoke()
-                        isMoreOptionsVisible = false
-                    }
-                )
+
+                ConfigExportUiMenu(onJson = { onExportAction.invoke(false) }) {
+                    onExportAction.invoke(true) // Custom Format
+                }
+
                 Divider(
                     Modifier
                         .fillMaxWidth()

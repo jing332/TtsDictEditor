@@ -4,6 +4,7 @@ import com.funny.data_saver.core.DataSaverConverter.registerTypeConverters
 import com.funny.data_saver.core.DataSaverPreferences
 import com.funny.data_saver.core.mutableDataSaverStateOf
 import com.github.jing332.tts_dict_editor.app
+import com.github.jing332.tts_dict_editor.const.ConfigConst
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -38,7 +39,13 @@ object AppConfig {
 
     val softKeyboardToolbar = mutableDataSaverStateOf<List<Pair<String, String>>>(
         dataSaverInterface = dataSaverPref,
-        key = "",
+        key = ConfigConst.KEY_SOFT_KEYBOARD_TOOLBAR,
         initialValue = emptyList()
+    )
+
+    val dictExportFormat = mutableDataSaverStateOf<String>(
+        dataSaverInterface = dataSaverPref,
+        key = ConfigConst.KEY_DICT_EXPORT_FORMAT,
+        initialValue = "$1=$2"
     )
 }
