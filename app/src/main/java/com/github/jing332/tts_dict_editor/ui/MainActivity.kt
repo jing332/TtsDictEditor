@@ -21,8 +21,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.funny.data_saver.core.LocalDataSaver
 import com.github.jing332.tts_dict_editor.data.appDb
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
+import com.github.jing332.tts_dict_editor.help.AppConfig
 import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditActivity
 import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditScreen
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
@@ -90,6 +92,7 @@ class MainActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
 
         CompositionLocalProvider(
+            LocalDataSaver provides AppConfig.dataSaverPref,
             LocalNavController provides navController,
             LocalSnackbarHostState provides snackbarHostState
         ) {

@@ -9,6 +9,7 @@ import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -17,7 +18,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.funny.data_saver.core.LocalDataSaver
 import com.github.jing332.tts_dict_editor.R
+import com.github.jing332.tts_dict_editor.help.AppConfig
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
 import com.github.jing332.tts_dict_editor.ui.navigateSingleTop
@@ -56,8 +59,6 @@ class ReplaceRuleActivity : ComponentActivity() {
             // if keypad is shown, the r.bottom is smaller than that before.
             val keypadHeight = screenHeight - r.bottom
 
-            Log.d(TAG, "keypadHeight = $keypadHeight")
-
             if (keypadHeight > screenHeight * 0.15) { // 0.15 ratio is perhaps enough to determine keypad height.
                 // keyboard is opened
                 if (!isKeyboardVisibleState.value) {
@@ -95,45 +96,51 @@ class ReplaceRuleActivity : ComponentActivity() {
         setContent {
             AppTheme {
                 Widgets.TransparentSystemBars()
+                CompositionLocalProvider(
+                    LocalDataSaver provides AppConfig.dataSaverPref,
+                ) {
+                    val navController = rememberNavController()
+                    NavHost(
+                        navController = navController,
+                        startDestination = NavRoutes.Manager.route
+                    ) {
+                        composable(NavRoutes.Manager.route) {
+                            val title = intent.getStringExtra("name")
+                                ?: getString(R.string.replace_rule_manager)
+                            val subTitle =
+                                getPath(uri)?.removePrefix(Environment.getExternalStorageDirectory().absolutePath)
+                                    ?: uri.toString()
+                            ReplaceRuleManagerScreen(
+                                title, subTitle,
+                                onFinishedActivity = { finish() },
+                                onEditRule = { rule ->
+                                    navController.navigateSingleTop(
+                                        NavRoutes.Editor.route,
+                                        Bundle().apply {
+                                            putParcelable(NavRoutes.Editor.KEY_RULE, rule)
+                                            putParcelableArrayList(
+                                                NavRoutes.Editor.KEY_GROUPS,
+                                                ArrayList(vm.groups())
+                                            )
+                                        }
+                                    )
+                                },
+                                vm = vm
+                            )
+                        }
+                        composable(NavRoutes.Editor.route) { stackEntry ->
+                            val rule: ReplaceRule? =
+                                stackEntry.arguments?.getParcelable(NavRoutes.Editor.KEY_RULE)
+                            val groups: ArrayList<ReplaceRuleGroup>? =
+                                stackEntry.arguments?.getParcelableArrayList(NavRoutes.Editor.KEY_GROUPS)
 
-                val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = NavRoutes.Manager.route) {
-                    composable(NavRoutes.Manager.route) {
-                        val title = intent.getStringExtra("name")
-                            ?: getString(R.string.replace_rule_manager)
-                        val subTitle =
-                            getPath(uri)?.removePrefix(Environment.getExternalStorageDirectory().absolutePath)
-                                ?: uri.toString()
-                        ReplaceRuleManagerScreen(
-                            title, subTitle,
-                            onFinishedActivity = { finish() },
-                            onEditRule = { rule ->
-                                navController.navigateSingleTop(
-                                    NavRoutes.Editor.route,
-                                    Bundle().apply {
-                                        putParcelable(NavRoutes.Editor.KEY_RULE, rule)
-                                        putParcelableArrayList(
-                                            NavRoutes.Editor.KEY_GROUPS,
-                                            ArrayList(vm.groups())
-                                        )
-                                    }
-                                )
-                            },
-                            vm = vm
-                        )
-                    }
-                    composable(NavRoutes.Editor.route) { stackEntry ->
-                        val rule: ReplaceRule? =
-                            stackEntry.arguments?.getParcelable(NavRoutes.Editor.KEY_RULE)
-                        val groups: ArrayList<ReplaceRuleGroup>? =
-                            stackEntry.arguments?.getParcelableArrayList(NavRoutes.Editor.KEY_GROUPS)
-
-                        RuleEditScreen(rule = rule!!, groups = groups!!, onResult = {
-                            navController.popBackStack()
-                            it?.let { rule ->
-                                vm.updateOrAddRule(rule)
-                            }
-                        })
+                            RuleEditScreen(rule = rule!!, groups = groups!!, onResult = {
+                                navController.popBackStack()
+                                it?.let { rule ->
+                                    vm.updateOrAddRule(rule)
+                                }
+                            })
+                        }
                     }
                 }
             }
