@@ -25,10 +25,9 @@ import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
 import com.github.jing332.tts_dict_editor.ui.navigateSingleTop
 import com.github.jing332.tts_dict_editor.ui.replace.edit.RuleEditScreen
-import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
-import com.github.jing332.tts_dict_editor.ui.widget.Widgets
 import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
 import com.github.jing332.tts_dict_editor.utils.observeNoSticky
+import io.github.lumyuan.turingbox.ui.theme.DictEditorTheme
 import kotlinx.coroutines.launch
 
 var isKeyboardVisibleState = mutableStateOf(false)
@@ -94,8 +93,8 @@ class ReplaceRuleActivity : ComponentActivity() {
         }
 
         setContent {
-            AppTheme {
-                Widgets.TransparentSystemBars()
+            DictEditorTheme {
+//                Widgets.TransparentSystemBars()
                 CompositionLocalProvider(
                     LocalDataSaver provides AppConfig.dataSaverPref,
                 ) {

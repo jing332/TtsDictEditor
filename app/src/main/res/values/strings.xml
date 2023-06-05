@@ -56,4 +56,17 @@
     <string name="custom_format_export">导出（自定义格式）</string>
     <string name="custom_format">自定义格式</string>
     <string name="json_format">Json格式</string>
+    <string name="theme_default">默认</string>
+    <string name="dynamic_color">动态颜色</string>
+    <string name="orange">橙色</string>
+    <string name="green">绿色</string>
+    <string name="red">红色</string>
+    <string name="pink">粉色</string>
+    <string name="blue">蓝色</string>
+    <string name="cyan">青色</string>
+    <string name="purple">紫色</string>
+    <string name="brown">棕色</string>
+    <string name="gray">灰色</string>
+    <string name="theme">主题</string>
+    <string name="device_not_support_dynamic_theme">您的系统不支持动态主题(需Android12及以上)</string>
 </resources>

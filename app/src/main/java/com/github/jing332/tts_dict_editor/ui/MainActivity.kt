@@ -30,6 +30,7 @@ import com.github.jing332.tts_dict_editor.ui.edit.DictFileEditScreen
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_dict_editor.ui.widget.Widgets.TransparentSystemBars
 import com.github.jing332.tts_server_android.util.longToast
+import io.github.lumyuan.turingbox.ui.theme.DictEditorTheme
 
 val LocalNavController = staticCompositionLocalOf<NavHostController> {
     error("NavController has not been initialized! ")
@@ -55,8 +56,8 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
-            AppTheme {
-                TransparentSystemBars()
+            DictEditorTheme {
+//                TransparentSystemBars()
                 Surface {
                     AppNavigation()
                 }

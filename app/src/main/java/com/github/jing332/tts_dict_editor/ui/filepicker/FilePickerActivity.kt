@@ -53,6 +53,7 @@ import com.github.jing332.tts_dict_editor.utils.FileTools
 import com.github.jing332.tts_dict_editor.utils.FileUriTools.toContentUri
 import com.github.jing332.tts_server_android.util.longToast
 import com.github.jing332.tts_server_android.util.toast
+import io.github.lumyuan.turingbox.ui.theme.DictEditorTheme
 import java.net.URLDecoder
 import java.net.URLEncoder
 
@@ -132,8 +133,8 @@ class FilePickerActivity : ComponentActivity() {
         checkFileReadPermission()
 
         setContent {
-            AppTheme {
-                Widgets.TransparentSystemBars()
+            DictEditorTheme {
+//                Widgets.TransparentSystemBars()
                 var title by remember { mutableStateOf("") }
                 Scaffold(
                     topBar = {

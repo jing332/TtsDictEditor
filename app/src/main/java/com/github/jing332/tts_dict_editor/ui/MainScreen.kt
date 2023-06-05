@@ -1,5 +1,6 @@
 package com.github.jing332.tts_dict_editor.ui
 
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.widget.Toast
@@ -21,11 +22,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.ripple.LocalRippleTheme
+import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerState
@@ -37,6 +37,7 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -63,17 +64,22 @@ import androidx.navigation.Navigator
 import com.github.jing332.tts_dict_editor.BuildConfig
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.ui.home.HomeScreen
+import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.talhafaki.composablesweettoast.util.SweetToastUtil
+import io.github.lumyuan.turingbox.ui.theme.getAppTheme
+import io.github.lumyuan.turingbox.ui.theme.setAppTheme
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import java.text.SimpleDateFormat
 import java.util.Locale
+
 
 @Composable
 fun MainScreen(
     drawerState: DrawerState = rememberDrawerState(DrawerValue.Closed),
     onFinishedActivity: () -> Unit,
 ) {
+    val context = LocalContext.current
 //    var lastBackDownTime by remember { mutableLongStateOf(0L) }
     var toastMsg by remember { mutableStateOf("") }
     if (toastMsg.isNotEmpty()) {
@@ -84,6 +90,28 @@ fun MainScreen(
         )
         toastMsg = ""
     }
+
+    var warnMsg by remember { mutableStateOf("") }
+    if (warnMsg.isNotEmpty()) {
+        SweetToastUtil.SweetWarning(
+            message = warnMsg,
+            Toast.LENGTH_LONG,
+            PaddingValues(bottom = 32.dp)
+        )
+        warnMsg = ""
+    }
+
+    val isVisibleThemeDialog = remember { mutableStateOf(false) }
+    if (isVisibleThemeDialog.value)
+        ThemeSettingsDialog(
+            onDismissRequest = { isVisibleThemeDialog.value = false },
+            currentTheme = getAppTheme(),
+            onChangeTheme = {
+                if (it == AppTheme.DYNAMIC_COLOR && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {// SDK < A12
+                    warnMsg = context.getString(R.string.device_not_support_dynamic_theme)
+                } else setAppTheme(it)
+            }
+        )
 
     val snackbarHostState = LocalSnackbarHostState.current
     val navController = LocalNavController.current
@@ -118,7 +146,8 @@ fun MainScreen(
                     .width(300.dp)
                     .background(MaterialTheme.colorScheme.background)
                     .padding(12.dp),
-                navController = navController
+                navController = navController,
+                isVisibleThemeDialog,
             )
         }
     ) {
@@ -128,7 +157,11 @@ fun MainScreen(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DrawerContent(modifier: Modifier, navController: NavHostController) {
+private fun DrawerContent(
+    modifier: Modifier,
+    navController: NavHostController,
+    isVisibleThemeDialog: MutableState<Boolean>
+) {
     val drawerItemIcon = @Composable { img: ImageVector, contentDescription: String ->
         Icon(
             img,
@@ -138,15 +171,19 @@ private fun DrawerContent(modifier: Modifier, navController: NavHostController) 
         )
     }
 
-    val drawerItem = @Composable { img: ImageVector, targetScreen: AppNavRoutes ->
+    @Composable
+    fun drawerItem(
+        img: ImageVector,
+        targetScreen: AppNavRoutes,
+        onClick: () -> Unit = { navController.navigateSingleTop(targetScreen.route) }
+    ) {
         NavigationDrawerItem(
             icon = { drawerItemIcon(img, stringResource(id = targetScreen.titleResId)) },
             label = { Text(text = stringResource(id = targetScreen.titleResId)) },
             selected = false,
-            onClick = { navController.navigateSingleTop(targetScreen.route) }
+            onClick = onClick,
         )
     }
-
     Column(modifier = modifier.verticalScroll(rememberScrollState())) {
         Spacer(modifier = Modifier.height(24.dp))
         val context = LocalContext.current
@@ -209,6 +246,14 @@ private fun DrawerContent(modifier: Modifier, navController: NavHostController) 
                 .padding(vertical = 16.dp, horizontal = 4.dp)
         )
 
+        NavigationDrawerItem(
+            icon = { drawerItemIcon(Icons.Filled.Style, stringResource(id = R.string.theme)) },
+            label = { Text(text = stringResource(id = R.string.theme)) },
+            selected = false,
+            onClick = {
+                isVisibleThemeDialog.value = true
+            },
+        )
         drawerItem(Icons.Filled.Info, AppNavRoutes.About)
     }
 }

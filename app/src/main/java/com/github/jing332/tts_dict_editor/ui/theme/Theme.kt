@@ -1,70 +1,120 @@
-package com.github.jing332.tts_dict_editor.ui.theme
+package io.github.lumyuan.turingbox.ui.theme
 
-import android.app.Activity
-import android.os.Build
+import android.content.Context
+import android.view.WindowManager
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
+import com.github.jing332.tts_dict_editor.help.AppConfig
+import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
+import com.github.jing332.tts_dict_editor.ui.theme.Typography
+import com.github.jing332.tts_dict_editor.ui.theme.blueTheme
+import com.github.jing332.tts_dict_editor.ui.theme.brownTheme
+import com.github.jing332.tts_dict_editor.ui.theme.cyanTheme
+import com.github.jing332.tts_dict_editor.ui.theme.defaultTheme
+import com.github.jing332.tts_dict_editor.ui.theme.dynamicColorTheme
+import com.github.jing332.tts_dict_editor.ui.theme.grayTheme
+import com.github.jing332.tts_dict_editor.ui.theme.greenTheme
+import com.github.jing332.tts_dict_editor.ui.theme.orangeTheme
+import com.github.jing332.tts_dict_editor.ui.theme.pinkTheme
+import com.github.jing332.tts_dict_editor.ui.theme.purpleTheme
+import com.github.jing332.tts_dict_editor.ui.theme.redTheme
+import com.github.jing332.tts_dict_editor.ui.theme.themeAnimation
+import com.gyf.immersionbar.ImmersionBar
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+/**
+ * 获取当前主题
+ */
+@Composable
+fun appTheme(
+    themeType: AppTheme,
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    context: Context = LocalContext.current
+): ColorScheme =
+    when (themeType) {
+        AppTheme.DEFAULT -> defaultTheme(darkTheme)
+        AppTheme.DYNAMIC_COLOR -> dynamicColorTheme(darkTheme, context)
+        AppTheme.GREEN -> greenTheme(darkTheme)
+        AppTheme.RED -> redTheme(darkTheme)
+        AppTheme.PINK -> pinkTheme(darkTheme)
+        AppTheme.BLUE -> blueTheme(darkTheme)
+        AppTheme.CYAN -> cyanTheme(darkTheme)
+        AppTheme.ORANGE -> orangeTheme(darkTheme)
+        AppTheme.PURPLE -> purpleTheme(darkTheme)
+        AppTheme.BROWN -> brownTheme(darkTheme)
+        AppTheme.GRAY -> grayTheme(darkTheme)
+    }
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-)
+//全局主题状态
+private val themeTypeState: MutableState<AppTheme> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
+    mutableStateOf(AppTheme.DEFAULT)
+}
 
 @Composable
-fun AppTheme(
+private fun InitTheme() {
+    val theme = try {
+        AppConfig.theme.value
+    } catch (e: Exception) {
+        e.printStackTrace()
+        AppTheme.DEFAULT
+    }
+    setAppTheme(themeType = theme)
+}
+
+/**
+ * 设置主题
+ */
+fun setAppTheme(themeType: AppTheme) {
+    themeTypeState.value = themeType
+    AppConfig.theme.value = themeType
+}
+
+/**
+ * 获取当前主题
+ */
+fun getAppTheme(): AppTheme = themeTypeState.value
+
+/**
+ * 根Context
+ */
+@Composable
+fun DictEditorTheme(
+    modifier: Modifier = Modifier,
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
+    //初始化主题
+    InitTheme()
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
-        }
-    }
+    //获取当前主题
+    val targetTheme = appTheme(themeType = themeTypeState.value)
+
+    //沉浸式状态栏
+    ImmersionBar.with(LocalView.current.context as ComponentActivity)
+        .transparentStatusBar()
+        .transparentNavigationBar()
+        .statusBarDarkFont(!darkTheme)
+        .navigationBarDarkIcon(!darkTheme)
+//        .keyboardEnable(true)
+        .keyboardMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        .init()
 
     MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+        colorScheme = themeAnimation(targetTheme = targetTheme),
+        typography = Typography
+    ) {
+        Surface(
+            modifier = modifier,
+            color = MaterialTheme.colorScheme.background,
+            content = content
+        )
+    }
 }

@@ -41,9 +41,9 @@ import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.const.IntentKeys
 import com.github.jing332.tts_dict_editor.data.entites.DictFile
 import com.github.jing332.tts_dict_editor.ui.widget.Widgets
-import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
 import com.github.jing332.tts_dict_editor.utils.FileUriTools.toContentUri
+import io.github.lumyuan.turingbox.ui.theme.DictEditorTheme
 import me.saket.cascade.CascadeDropdownMenu
 
 @Suppress("DEPRECATION")
@@ -59,8 +59,8 @@ class DictFileEditActivity : ComponentActivity() {
         vm.init(dictFile)
 
         setContent {
-            AppTheme {
-                Widgets.TransparentSystemBars()
+            DictEditorTheme {
+//                Widgets.TransparentSystemBars()
                 Scaffold(
                     modifier = Modifier.imePadding(),
                     topBar = {

@@ -5,10 +5,12 @@ import com.funny.data_saver.core.DataSaverPreferences
 import com.funny.data_saver.core.mutableDataSaverStateOf
 import com.github.jing332.tts_dict_editor.app
 import com.github.jing332.tts_dict_editor.const.ConfigConst
+import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
+@OptIn(ExperimentalStdlibApi::class)
 object AppConfig {
     @OptIn(ExperimentalSerializationApi::class)
     private val json by lazy {
@@ -33,9 +35,22 @@ object AppConfig {
                 list
             }
         )
+
+        registerTypeConverters(
+            save = { it.id },
+            restore = { value ->
+                AppTheme.values().find { it.id == value } ?: AppTheme.DEFAULT
+            }
+        )
     }
 
     val dataSaverPref = DataSaverPreferences(app.getSharedPreferences("app", 0))
+
+    val theme = mutableDataSaverStateOf(
+        dataSaverInterface = dataSaverPref,
+        key = ConfigConst.KEY_THEME,
+        initialValue = AppTheme.DEFAULT
+    )
 
     val softKeyboardToolbar = mutableDataSaverStateOf<List<Pair<String, String>>>(
         dataSaverInterface = dataSaverPref,

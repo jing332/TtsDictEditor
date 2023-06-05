@@ -146,6 +146,10 @@ dependencies {
     // https://github.com/aclassen/ComposeReorderable
     implementation "org.burnoutcrew.composereorderable:reorderable:0.9.6"
 
+    // https://github.com/gyf-dev/ImmersionBar
+    implementation 'com.geyifeng.immersionbar:immersionbar:3.2.2'
+    implementation 'com.geyifeng.immersionbar:immersionbar-ktx:3.2.2'
+
     def accompanist_version = '0.31.3-beta'
     implementation "com.google.accompanist:accompanist-systemuicontroller:${accompanist_version}"
     implementation "com.google.accompanist:accompanist-navigation-animation:${accompanist_version}"
