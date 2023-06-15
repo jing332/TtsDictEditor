@@ -2,6 +2,7 @@ package com.github.jing332.tts_dict_editor.ui
 
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
@@ -11,7 +12,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.ui.theme.AppTheme
 
@@ -50,10 +53,9 @@ fun ThemeSettingsDialog(
                     val selected = currentTheme.id == it.id
                     FilterChip(
                         selected,
+                        modifier = Modifier.padding(horizontal = 2.dp),
                         leadingIcon = if (selected) leadingIcon else null,
-                        onClick = {
-                            onChangeTheme(it)
-                        },
+                        onClick = { onChangeTheme(it) },
                         label = { Text(stringResource(id = it.stringResId)) }
                     )
                 }

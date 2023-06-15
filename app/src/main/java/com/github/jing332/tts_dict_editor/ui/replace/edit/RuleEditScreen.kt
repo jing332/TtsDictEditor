@@ -187,6 +187,7 @@ private object InputFieldID {
     const val NAME = 0
     const val PATTERN = 1
     const val REPLACEMENT = 2
+    const val SAMPLE_TEXT = 3
 }
 
 /**
@@ -221,6 +222,11 @@ private fun Screen(
     var currentInputFocus by remember { mutableIntStateOf(-1) }
 
     var nameTextFieldValue by remember { mutableStateOf(TextFieldValue(nameValue)) }
+    fun setName(value: TextFieldValue) {
+        nameTextFieldValue = value
+        onNameValueChange.invoke(value.text)
+    }
+
     var patternTextFieldValue by remember { mutableStateOf(TextFieldValue(patternValue)) }
     fun setPattern(value: TextFieldValue) {
         patternTextFieldValue = value
@@ -233,17 +239,23 @@ private fun Screen(
         onReplacementValueChange.invoke(value.text)
     }
 
+    var sampleTextFieldValue by remember { mutableStateOf(TextFieldValue("")) }
     if (insertKeyState.value.isNotEmpty()) {
         println("insertKeyState.value: " + insertKeyState.value)
         when (currentInputFocus) {
-            InputFieldID.PATTERN -> {
-                setPattern(patternTextFieldValue.newValueOfInsertText(insertKeyState.value))
-            }
+            InputFieldID.NAME ->
+                setName(nameTextFieldValue.newValueOfInsertText(insertKeyState.value))
 
-            InputFieldID.REPLACEMENT -> {
+            InputFieldID.PATTERN -> setPattern(
+                patternTextFieldValue.newValueOfInsertText(insertKeyState.value)
+            )
 
+            InputFieldID.REPLACEMENT ->
                 setReplacement(replacementTextFieldValue.newValueOfInsertText(insertKeyState.value))
-            }
+
+            InputFieldID.SAMPLE_TEXT ->
+                sampleTextFieldValue =
+                    sampleTextFieldValue.newValueOfInsertText(insertKeyState.value)
         }
         insertKeyState.value = ""
     }
@@ -269,9 +281,13 @@ private fun Screen(
 
         OutlinedTextField(
             label = { Text(stringResource(R.string.name)) },
-            value = nameValue,
-            onValueChange = onNameValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            value = nameTextFieldValue,
+            onValueChange = { setName(it) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused) currentInputFocus = InputFieldID.NAME
+                },
         )
 
         OutlinedTextField(label = { Text(stringResource(R.string.pattern)) },
@@ -327,20 +343,23 @@ private fun Screen(
                 .padding(vertical = 4.dp)
         )
 
-        var testText by remember { mutableStateOf("") }
         var testResult by remember { mutableStateOf("") }
 
         OutlinedTextField(
             label = { Text(stringResource(R.string.test_text)) },
-            value = testText,
+            value = sampleTextFieldValue,
             onValueChange = {
-                testText = it
-                testResult = onTest.invoke(it)
+                sampleTextFieldValue = it
+                testResult = onTest.invoke(it.text)
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused) currentInputFocus = InputFieldID.SAMPLE_TEXT
+                },
         )
 
-        if (testText.isNotEmpty()) Text(stringResource(R.string.label_result))
+        if (sampleTextFieldValue.text.isNotEmpty()) Text(stringResource(R.string.label_result))
         SelectionContainer {
             Text(text = testResult, style = MaterialTheme.typography.bodyMedium)
         }

@@ -27,6 +27,7 @@ import com.github.jing332.tts_dict_editor.ui.navigateSingleTop
 import com.github.jing332.tts_dict_editor.ui.replace.edit.RuleEditScreen
 import com.github.jing332.tts_dict_editor.utils.ASFUriUtils.getPath
 import com.github.jing332.tts_dict_editor.utils.observeNoSticky
+import com.github.jing332.tts_server_android.util.longToast
 import io.github.lumyuan.turingbox.ui.theme.DictEditorTheme
 import kotlinx.coroutines.launch
 
@@ -149,6 +150,7 @@ class ReplaceRuleActivity : ComponentActivity() {
             kotlin.runCatching {
                 vm.loadRulesFromDictTxt(contentResolver.openInputStream(uri)!!)
             }.onFailure {
+                longToast(getString(R.string.failed_to_load) + ": " + it.message)
 //                errDialog = getString(R.string.failed_to_load) to it
             }
         }
