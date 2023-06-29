@@ -184,12 +184,8 @@ fun ReplaceRuleManagerScreen(
                         }
                     }
 
-                    var isMoreOptionsVisible by remember {
-                        mutableStateOf(false)
-                    }
-                    IconButton(onClick = {
-                        isMoreOptionsVisible = true
-                    }) {
+                    var isMoreOptionsVisible by remember { mutableStateOf(false) }
+                    IconButton(onClick = { isMoreOptionsVisible = true }) {
                         Icon(
                             Icons.Filled.MoreVert,
                             stringResource(id = R.string.more_options)
@@ -343,8 +339,6 @@ private fun Screen(
     onReorder: (fromIndex: Int, toIndex: Int) -> Unit,
     onExportGroup: (ReplaceRuleGroup, Boolean) -> Unit,
 ) {
-    // 保存展开的分组ID 提高效率 避免每次item都要去list中查找
-//        var expandedGroups by remember { mutableStateOf<List<Long>>(emptyList()) }
     val orderState = rememberReorderableLazyListState(onMove = { from, to ->
         println("from $from to $to")
         onReorder.invoke(from.index, to.index)

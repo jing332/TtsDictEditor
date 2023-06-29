@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
@@ -241,7 +242,6 @@ private fun Screen(
 
     var sampleTextFieldValue by remember { mutableStateOf(TextFieldValue("")) }
     if (insertKeyState.value.isNotEmpty()) {
-        println("insertKeyState.value: " + insertKeyState.value)
         when (currentInputFocus) {
             InputFieldID.NAME ->
                 setName(nameTextFieldValue.newValueOfInsertText(insertKeyState.value))
