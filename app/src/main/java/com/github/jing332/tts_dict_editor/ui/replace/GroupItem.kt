@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.jing332.tts_dict_editor.R
+import com.github.jing332.tts_dict_editor.const.ExportType
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
 
@@ -39,7 +40,7 @@ fun GroupItem(
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDeleteAction: () -> Unit,
-    onExportAction: (isCustomType: Boolean) -> Unit,
+    onExportAction: (type: Int) -> Unit,
 ) {
     Row(
         modifier
@@ -90,9 +91,14 @@ fun GroupItem(
                     }
                 )
 
-                ConfigExportUiMenu(onJson = { onExportAction.invoke(false) }) {
-                    onExportAction.invoke(true) // Custom Format
-                }
+                ConfigExportUiMenu(onJson = { onExportAction.invoke(ExportType.JSON) },
+                    onCustomFormat = {
+                        onExportAction.invoke(ExportType.CUSTOM_FORMAT) // Custom Format
+                    },
+                    onYamlFormat = {
+                        onExportAction(ExportType.YAML)
+                    }
+                )
 
                 Divider(
                     Modifier

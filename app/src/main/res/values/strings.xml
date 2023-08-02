@@ -69,4 +69,6 @@
     <string name="gray">灰色</string>
     <string name="theme">主题</string>
     <string name="device_not_support_dynamic_theme">您的系统不支持动态主题(需Android12及以上)</string>
+    <string name="new_multitts_format">新·MultiTTS</string>
+    <string name="failed_to_save">保存失败：%s</string>
 </resources>

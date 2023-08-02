@@ -87,7 +87,7 @@ class ReplaceRuleActivity : ComponentActivity() {
                         contentResolver.openOutputStream(uri, "wt" /*覆写*/)
                             ?.use { os -> os.write(txt.toByteArray()) }
                     }.onFailure { t ->
-//                        errDialog = "保存文件错误" to t
+                        longToast(getString(R.string.failed_to_save) + ": " + t.message)
                     }
                 }
             }

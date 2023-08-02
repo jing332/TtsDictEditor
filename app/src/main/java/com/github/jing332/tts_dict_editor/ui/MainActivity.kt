@@ -83,7 +83,6 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    @OptIn(ExperimentalAnimationApi::class)
     @Composable
     fun AppNavigation(
         navController: NavHostController = rememberNavController(),

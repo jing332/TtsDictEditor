@@ -94,7 +94,6 @@ fun RuleEditScreen(
     onResult: (ReplaceRule?) -> Unit,
 ) {
     val vm: RuleEditViewModel = viewModel()
-    var isVisibleToolbar by remember { mutableStateOf(false) }
     var inputKeyState = remember { mutableStateOf("") }
     var toolbarKeyList: List<Pair<String, String>> by rememberDataSaverState(
         key = ConfigConst.KEY_SOFT_KEYBOARD_TOOLBAR,

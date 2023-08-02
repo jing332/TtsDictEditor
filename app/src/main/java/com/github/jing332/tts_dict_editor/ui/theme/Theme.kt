@@ -85,6 +85,7 @@ fun getAppTheme(): AppTheme = themeTypeState.value
 /**
  * 根Context
  */
+@Suppress("DEPRECATION")
 @Composable
 fun DictEditorTheme(
     modifier: Modifier = Modifier,

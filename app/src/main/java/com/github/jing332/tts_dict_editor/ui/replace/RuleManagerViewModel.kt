@@ -13,6 +13,8 @@ import com.github.jing332.tts_dict_editor.help.DictFileManager.Companion.toTxt
 import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRuleGroup
+import com.github.jing332.tts_dict_editor.replace.ReplaceManager
+import com.github.jing332.tts_dict_editor.replace.ReplaceRuleYaml
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -168,6 +170,18 @@ class RuleManagerViewModel : ViewModel() {
         return count
     }
 
+    suspend fun exportYaml(): String {
+        return ReplaceManager.toYaml(rules().map {
+            ReplaceRuleYaml(
+                activate = it.isEnabled,
+                name = it.name.ifEmpty { it.pattern },
+                regex = it.isRegex,
+                source = it.pattern,
+                target = it.replacement
+            )
+        })
+    }
+
     suspend fun export(): String {
         val gwrs = groupWithRules()
         return AppConst.json.encodeToString(gwrs)
@@ -184,7 +198,7 @@ class RuleManagerViewModel : ViewModel() {
         return AppConst.json.encodeToString(gwrs)
     }
 
-    suspend fun exportGroupByFormat(group: ReplaceRuleGroup, format:String):String{
+    suspend fun exportGroupByFormat(group: ReplaceRuleGroup, format: String): String {
         val gwrs = groupWithRules().filter { it.group.id == group.id }
         return gwrs.flatMap { it.list }
             .joinToString("\n") { format.replace("$1", it.pattern).replace("$2", it.replacement) }
@@ -193,8 +207,8 @@ class RuleManagerViewModel : ViewModel() {
     fun reorder(from: Int, to: Int) {
         val fromItem = list[from]
         val toItem = list[to]
-        val startIndex = min(from, to)
-        val endIndex = max(from, to)
+//        val startIndex = min(from, to)
+//        val endIndex = max(from, to)
 
         if (fromItem is ReplaceRule && toItem is ReplaceRule && fromItem.groupId == toItem.groupId) {
             list.add(to, list.removeAt(from))

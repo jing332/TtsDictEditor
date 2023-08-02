@@ -14,7 +14,11 @@ import me.saket.cascade.CascadeColumnScope
 
 
 @Composable
-internal fun CascadeColumnScope.ConfigExportUiMenu(onJson: () -> Unit, onCustomFormat: () -> Unit) {
+internal fun CascadeColumnScope.ConfigExportUiMenu(
+    onJson: () -> Unit,
+    onCustomFormat: () -> Unit,
+    onYamlFormat: () -> Unit
+) {
     DropdownMenuItem(leadingIcon = {
         Icon(
             Icons.Filled.Output, "",
@@ -30,6 +34,16 @@ internal fun CascadeColumnScope.ConfigExportUiMenu(onJson: () -> Unit, onCustomF
             },
             text = { Text(stringResource(R.string.json_format)) },
             onClick = { onJson.invoke() })
+        androidx.compose.material3.DropdownMenuItem(
+            leadingIcon = {
+                Icon(
+                    Icons.Filled.FormatColorText, "",
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+            },
+            text = { Text(stringResource(R.string.new_multitts_format)) },
+            onClick = { onYamlFormat() })
+
         androidx.compose.material3.DropdownMenuItem(
             leadingIcon = {
                 Icon(

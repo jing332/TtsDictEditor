@@ -32,7 +32,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.jing332.tts_dict_editor.R
 import com.github.jing332.tts_dict_editor.const.AppConst
+import com.github.jing332.tts_dict_editor.const.ExportType
 import com.github.jing332.tts_dict_editor.help.AppConfig
 import com.github.jing332.tts_dict_editor.help.GroupWithReplaceRule
 import com.github.jing332.tts_dict_editor.help.ReplaceRule
@@ -218,6 +218,12 @@ fun ReplaceRuleManagerScreen(
                                 onCustomFormat = {
                                     isMoreOptionsVisible = false
                                     isVisibleCustomFormatExport = true to null
+                                },
+                                onYamlFormat = {
+                                    isMoreOptionsVisible = false
+                                    coroutineScope.launch {
+                                        exportedConfigText = vm.exportYaml()
+                                    }
                                 }
                             )
                         }
@@ -245,18 +251,21 @@ fun ReplaceRuleManagerScreen(
                     onEditRule = { onEditRule.invoke(it) },
                     onDeleteRule = { coroutineScope.launch { vm.deleteRule(it) } },
                     onReorder = { from, to -> vm.reorder(from, to) },
-                    onExportGroup = { group, isCustomFormat ->
-                        if (isCustomFormat)
-                            isVisibleCustomFormatExport = true to group
-                        else
-                            coroutineScope.launch {
-                                exportedConfigText =
-                                    com.drake.net.utils.withDefault { vm.exportGroup(group) }
+                    onExportGroup = { group, type ->
+                        coroutineScope.launch {
+                            when (type) {
+                                ExportType.JSON -> exportedConfigText = vm.exportGroup(group)
+                                ExportType.CUSTOM_FORMAT -> isVisibleCustomFormatExport =
+                                    true to group
+
+                                ExportType.YAML -> exportedConfigText = vm.exportYaml()
                             }
+                        }
                     },
                 )
             }
-        })
+        }
+    )
 
     if (isVisibleImportConfig)
         ImportConfigDialog(
@@ -293,8 +302,13 @@ fun ReplaceRuleManagerScreen(
                 isVisibleCustomFormatExport = false to null
                 coroutineScope.launch {
                     exportedConfigText =
-                        if (isVisibleCustomFormatExport.second == null) vm.exportByFormat(format)
-                        else vm.exportGroupByFormat(isVisibleCustomFormatExport.second!!, format)
+                        if (isVisibleCustomFormatExport.second == null) vm.exportByFormat(
+                            format
+                        )
+                        else vm.exportGroupByFormat(
+                            isVisibleCustomFormatExport.second!!,
+                            format
+                        )
                 }
             }
         )
@@ -308,7 +322,7 @@ private fun ImportConfigDialog(
     onDismissRequest: () -> Unit,
     onImport: (List<GroupWithReplaceRule>) -> Unit
 ) {
-    val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+//    val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectDialogData by remember {
         mutableStateOf<List<GroupWithReplaceRule>?>(null)
     }
@@ -337,7 +351,7 @@ private fun Screen(
     onEditRule: (ReplaceRule) -> Unit,
     onDeleteRule: (ReplaceRule) -> Unit,
     onReorder: (fromIndex: Int, toIndex: Int) -> Unit,
-    onExportGroup: (ReplaceRuleGroup, Boolean) -> Unit,
+    onExportGroup: (ReplaceRuleGroup, Int) -> Unit,
 ) {
     val orderState = rememberReorderableLazyListState(onMove = { from, to ->
         println("from $from to $to")
@@ -350,7 +364,7 @@ private fun Screen(
             .reorderable(orderState)
             .detectReorderAfterLongPress(orderState)
     ) {
-        list.forEachIndexed { index, item ->
+        list.forEachIndexed { _, item ->
             when (item) {
                 is ReplaceRuleGroup -> {
                     stickyHeader(key = "group_${item.id}") {
@@ -453,7 +467,7 @@ fun PreviewOrderList() {
             .detectReorderAfterLongPress(orderState),
     ) {
         items(list, key = { it }) {
-            ReorderableItem(state = orderState, key = it) { isDraging ->
+            ReorderableItem(state = orderState, key = it) { _ ->
                 Text(
                     text = it,
                     modifier = Modifier
